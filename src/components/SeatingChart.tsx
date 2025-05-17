@@ -1,5 +1,5 @@
 'use client';
-import type React from 'react';
+import React from 'react'; // Added React import
 import { SeatComponent } from './Seat';
 import type { Seat, SeatLayoutConfig } from '@/lib/types';
 import { getAisleAfterSeat, getSeatRowLabel } from '@/lib/seat-utils';
