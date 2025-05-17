@@ -210,7 +210,7 @@ export default function HomePage() {
           <Separator />
           <BookingSummary
             currentBooking={currentBooking}
-            selectedSeatsForAdmin={seats.filter(s => selectedSeatIdsForAdmin.includes(s.id))}
+            selectedSeats={seats.filter(s => selectedSeatIdsForAdmin.includes(s.id))}
             isAdminMode={isLocalAdminMode}
             onCancelBooking={handleCancelBooking}
             onConfirmAdminBooking={handleAdminBookingConfirm}

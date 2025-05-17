@@ -8,7 +8,7 @@ import { XCircle, CheckCircle } from 'lucide-react';
 
 interface BookingSummaryProps {
   currentBooking: CurrentBooking | null;
-  selectedSeatsForAdmin: Seat[];
+  selectedSeats: Seat[]; // Changed from selectedSeatsForAdmin to selectedSeats
   isAdminMode: boolean;
   onCancelBooking: () => void;
   onConfirmAdminBooking: () => void;
@@ -16,12 +16,12 @@ interface BookingSummaryProps {
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
   currentBooking,
-  selectedSeatsForAdmin,
+  selectedSeats, // Changed from selectedSeatsForAdmin
   isAdminMode,
   onCancelBooking,
   onConfirmAdminBooking,
 }) => {
-  if (!currentBooking && (!isAdminMode || selectedSeatsForAdmin.length === 0)) {
+  if (!currentBooking && (!isAdminMode || selectedSeats.length === 0)) {
     return (
       <Card className="shadow-lg">
         <CardHeader>
@@ -34,9 +34,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
     );
   }
 
-  const seatsToDisplay = currentBooking ? currentBooking.bookedSeats : selectedSeatsForAdmin;
+  const seatsToDisplay = currentBooking ? currentBooking.bookedSeats : selectedSeats;
   const title = currentBooking ? `Booking ID: ${currentBooking.id.substring(0,8)}...` : "Admin Selection";
-  const description = currentBooking ? `Group of ${currentBooking.groupSize}` : `${selectedSeatsForAdmin.length} seat(s) selected`;
+  const description = currentBooking ? `Group of ${currentBooking.groupSize}` : `${selectedSeats.length} seat(s) selected`;
 
   return (
     <Card className="shadow-lg">
@@ -67,7 +67,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             Cancel Booking
           </Button>
         )}
-        {isAdminMode && selectedSeatsForAdmin.length > 0 && !currentBooking && (
+        {isAdminMode && selectedSeats.length > 0 && !currentBooking && (
           <Button onClick={onConfirmAdminBooking} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
             <CheckCircle className="mr-2 h-4 w-4" />
             Confirm Admin Booking

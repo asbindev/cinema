@@ -3,7 +3,7 @@ import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { SessionProvider } from 'next-auth/react'; // Added SessionProvider
+import Providers from '@/components/Providers'; // Changed from SessionProvider
 
 const geistSans = Geist({ 
   variable: '--font-geist-sans',
@@ -22,18 +22,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  pageProps, // NextAuth requires session to be passed if using getServerSideProps, but for App Router, SessionProvider handles it.
 }: Readonly<{
   children: React.ReactNode;
-  pageProps?: { session?: any }; // Making pageProps optional as it's not always needed for App Router
 }>) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SessionProvider session={pageProps?.session}>
+        <Providers> {/* Use the new Providers component */}
           {children}
           <Toaster />
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   );
