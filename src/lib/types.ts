@@ -50,7 +50,7 @@ export interface AIAllocationResult {
   error?: string;
 }
 
-// New type for Movie
+// Movie types
 export interface Movie {
   id: number;
   title: string;
@@ -66,4 +66,22 @@ export interface MovieFormData {
   description?: string;
   posterUrl?: string;
   duration?: number;
+}
+
+// User and Auth types
+export interface User {
+  id: number;
+  name?: string | null;
+  email: string;
+  role: 'user' | 'admin';
+  hashedPassword?: string; // Should not be sent to client
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthUser { // What NextAuth session/jwt will contain
+  id: number;
+  name?: string | null;
+  email: string;
+  role: 'user' | 'admin';
 }

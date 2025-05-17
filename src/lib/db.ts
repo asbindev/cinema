@@ -30,16 +30,18 @@ export async function getDb() {
         );
       `);
 
-      // Example: Add more tables as needed
-      // await db.exec(\`
-      //   CREATE TABLE IF NOT EXISTS users (
-      //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-      //     email TEXT UNIQUE NOT NULL,
-      //     password TEXT NOT NULL, 
-      //     role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
-      //     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // \`);
+      // Ensure the users table exists
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          email TEXT UNIQUE NOT NULL,
+          hashedPassword TEXT NOT NULL, 
+          role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
 
       console.log('Database connected and tables ensured.');
     } catch (error) {
