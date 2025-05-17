@@ -59,7 +59,21 @@ export default {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+        'seat-regular': 'var(--seat-regular)',
+        'seat-regular-foreground': 'var(--seat-regular-foreground)',
+        'seat-vip': 'var(--seat-vip)',
+        'seat-vip-foreground': 'var(--seat-vip-foreground)',
+        'seat-accessible': 'var(--seat-accessible)',
+        'seat-accessible-foreground': 'var(--seat-accessible-foreground)',
+        'seat-age-restricted': 'var(--seat-age-restricted)',
+        'seat-age-restricted-foreground': 'var(--seat-age-restricted-foreground)',
+        'seat-broken': 'var(--seat-broken)',
+        'seat-broken-foreground': 'var(--seat-broken-foreground)',
+        'seat-booked': 'var(--seat-booked)',
+        'seat-booked-foreground': 'var(--seat-booked-foreground)',
+        'seat-selected': 'var(--seat-selected)',
+        'seat-selected-foreground': 'var(--seat-selected-foreground)',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -87,7 +101,11 @@ export default {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
+  		},
+      fontFamily: {
+        sans: ["var(--font-geist-sans)"],
+        mono: ["var(--font-geist-mono)"],
+      }
   	}
   },
   plugins: [require("tailwindcss-animate")],
