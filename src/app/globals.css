@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,20 +49,47 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --seat-regular: hsl(var(--secondary));
-    --seat-regular-foreground: hsl(var(--secondary-foreground));
-    --seat-vip: hsl(var(--primary));
-    --seat-vip-foreground: hsl(var(--primary-foreground));
-    --seat-accessible: 270 50% 60%; /* Purple for accessible */
-    --seat-accessible-foreground: hsl(var(--primary-foreground));
-    --seat-age-restricted: 45 100% 50%; /* Yellow for age-restricted */
-    --seat-age-restricted-foreground: hsl(var(--foreground));
-    --seat-broken: 0 0% 70%;
-    --seat-broken-foreground: hsl(var(--background));
-    --seat-booked: 0 0% 40%;
-    --seat-booked-foreground: hsl(var(--background));
+    /* Updated seat colors to match UI description */
+    --seat-available: 220 13% 91%; /* Light Gray */
+    --seat-available-foreground: 240 10% 3.9%;
+
+    --seat-vip: 120 60% 45%; /* Green */
+    --seat-vip-foreground: 0 0% 98%;
+
+    --seat-accessible: 250 60% 60%; /* Purple-ish Blue for 'DISABLE' */
+    --seat-accessible-foreground: 0 0% 98%;
+    
+    --seat-senior: 220 70% 45%; /* Dark Blue for 'SENIOR CITIZEN' */
+    --seat-senior-foreground: 0 0% 98%;
+
+    --seat-broken: 180 50% 45%; /* Teal for 'DAMAGED' */
+    --seat-broken-foreground: 0 0% 98%;
+
+    /* --seat-age-restricted: 45 100% 50%; /* Yellow for age-restricted - Not in new UI */
+    /* --seat-age-restricted-foreground: hsl(var(--foreground)); */
+
+    --seat-booked-group: 0 70% 50%; /* Red for 'GROUP' */
+    --seat-booked-group-foreground: 0 0% 98%;
+
+    --seat-booked-single: 30 80% 55%; /* Orange for 'SINGLE' */
+    --seat-booked-single-foreground: 0 0% 98%;
+    
+    --seat-booked: 240 10% 15%; /* Dark Gray/Black for generic 'BOOKED' */
+    --seat-booked-foreground: 0 0% 90%;
+    
     --seat-selected: hsl(var(--accent));
     --seat-selected-foreground: hsl(var(--accent-foreground));
+
+    /* Specific text colors for seats */
+    --seat-text-vip: 120 100% 95%;
+    --seat-text-disable: 250 100% 95%;
+    --seat-text-senior: 220 100% 95%;
+    --seat-text-damaged: 180 100% 95%;
+    --seat-text-group: 0 100% 95%;
+    --seat-text-single: 30 100% 95%;
+    --seat-text-booked: 0 0% 80%;
+    --seat-text-available: 240 10% 20%;
+    --seat-text-id: 0 0% 40%; /* for D1, C3 etc. */
   }
 
   .dark {
@@ -80,19 +108,19 @@ body {
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
 
-    --primary: 207 70% 53%; /* #3498db - Deep Blue */
+    --primary: 207 70% 53%; 
     --primary-foreground: 0 0% 98%;
     
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
 
-    --accent: 26 80% 52%; /* #e67e22 - Vibrant Orange */
+    --accent: 26 80% 52%; 
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 207 70% 53%; /* Deep Blue for rings */
+    --ring: 207 70% 53%; 
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -103,20 +131,44 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --seat-regular: hsl(var(--secondary));
-    --seat-regular-foreground: hsl(var(--secondary-foreground));
-    --seat-vip: hsl(var(--primary));
-    --seat-vip-foreground: hsl(var(--primary-foreground));
-    --seat-accessible: 270 50% 70%; 
-    --seat-accessible-foreground: hsl(var(--foreground));
-    --seat-age-restricted: 45 100% 60%; 
-    --seat-age-restricted-foreground: hsl(var(--foreground));
-    --seat-broken: 0 0% 30%;
-    --seat-broken-foreground: hsl(var(--background));
-    --seat-booked: 0 0% 20%;
-    --seat-booked-foreground: hsl(var(--background));
+    /* Dark theme seat colors */
+    --seat-available: 240 3.7% 20%; 
+    --seat-available-foreground: 0 0% 90%;
+
+    --seat-vip: 120 50% 35%;
+    --seat-vip-foreground: 0 0% 98%;
+
+    --seat-accessible: 250 50% 50%;
+    --seat-accessible-foreground: 0 0% 98%;
+    
+    --seat-senior: 220 60% 40%;
+    --seat-senior-foreground: 0 0% 98%;
+
+    --seat-broken: 180 40% 35%;
+    --seat-broken-foreground: 0 0% 98%;
+
+    --seat-booked-group: 0 60% 40%;
+    --seat-booked-group-foreground: 0 0% 98%;
+
+    --seat-booked-single: 30 70% 45%;
+    --seat-booked-single-foreground: 0 0% 98%;
+    
+    --seat-booked: 240 10% 10%;
+    --seat-booked-foreground: 0 0% 80%;
+    
     --seat-selected: hsl(var(--accent));
     --seat-selected-foreground: hsl(var(--accent-foreground));
+    
+    /* Dark theme specific text colors for seats */
+    --seat-text-vip: 120 100% 85%;
+    --seat-text-disable: 250 100% 85%;
+    --seat-text-senior: 220 100% 85%;
+    --seat-text-damaged: 180 100% 85%;
+    --seat-text-group: 0 100% 85%;
+    --seat-text-single: 30 100% 85%;
+    --seat-text-booked: 0 0% 70%;
+    --seat-text-available: 240 10% 70%;
+    --seat-text-id: 0 0% 60%;
   }
 }
 
