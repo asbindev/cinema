@@ -5,7 +5,7 @@ import type { Seat, SeatLayoutConfig } from '@/lib/types';
 import { getAisleAfterSeat, getSeatRowLabel } from '@/lib/seat-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Armchair, Star, Wheelchair, Ban, CheckCircle2, UserCheck } from 'lucide-react';
+import { Armchair, Star, Accessibility, Ban, CheckCircle2, UserCheck } from 'lucide-react'; // Changed Wheelchair to Accessibility
 
 interface SeatingChartProps {
   seats: Seat[];
@@ -71,7 +71,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({ seats, config, onSea
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-2 border-t pt-4">
             <LegendItem colorClass="bg-seat-regular text-seat-regular-foreground" icon={Armchair} label="Regular" />
             <LegendItem colorClass="bg-seat-vip text-seat-vip-foreground" icon={Star} label="VIP" />
-            <LegendItem colorClass="bg-seat-accessible text-seat-accessible-foreground" icon={Wheelchair} label="Accessible" />
+            <LegendItem colorClass="bg-seat-accessible text-seat-accessible-foreground" icon={Accessibility} label="Accessible" /> 
             <LegendItem colorClass="bg-seat-age-restricted text-seat-age-restricted-foreground" icon={Ban} label="Age Restricted" />
             <LegendItem colorClass="bg-seat-selected text-seat-selected-foreground" icon={UserCheck} label="Selected" />
             <LegendItem colorClass="bg-seat-booked text-seat-booked-foreground" icon={CheckCircle2} label="Booked" />
