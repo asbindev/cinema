@@ -80,8 +80,9 @@ export interface User {
 }
 
 export interface AuthUser { // What NextAuth session/jwt will contain
-  id: number;
+  id: string; // Changed from number to string to align with authorize return and token
   name?: string | null;
   email: string;
   role: 'user' | 'admin';
 }
+
