@@ -1,150 +1,46 @@
 
 'use client';
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
+import Image from 'next/image';
 import { CineSeatProLogo } from '@/components/CineSeatProLogo';
-import { SeatingChart } from '@/components/SeatingChart';
-import { BookingForm } from '@/components/BookingForm';
-import { AdminControls } from '@/components/AdminControls'; // Stays for local admin mode toggle
-import { BookingSummary } from '@/components/BookingSummary';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { generateInitialSeats, defaultSeatLayoutConfig } from '@/lib/seat-utils';
-import type { Seat, BookingFormState, CurrentBooking, SeatLayoutConfig, AuthUser } from '@/lib/types';
-import { handleSeatAllocation } from '@/lib/actions';
-import { Separator } from '@/components/ui/separator';
-import { RefreshCw, LogIn, LogOut, UserPlus, Settings } from 'lucide-react';
+import type { Movie, AuthUser } from '@/lib/types';
+import { LogIn, LogOut, UserPlus, Settings, Film, TicketIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const { toast } = useToast();
-  const [seatLayoutConfig] = useState<SeatLayoutConfig>(defaultSeatLayoutConfig);
-  const [seats, setSeats] = useState<Seat[]>([]);
-  const [selectedSeatIdsForAdmin, setSelectedSeatIdsForAdmin] = useState<string[]>([]);
-  const [currentBooking, setCurrentBooking] = useState<CurrentBooking | null>(null);
-  const [isLocalAdminMode, setIsLocalAdminMode] = useState(false); // Renamed to avoid confusion with actual admin role
-  const [isLoading, setIsLoading] = useState(false);
-
-  const initializeSeats = useCallback(() => {
-    const initialSeats = generateInitialSeats(seatLayoutConfig);
-    setSeats(initialSeats);
-    setCurrentBooking(null);
-    setSelectedSeatIdsForAdmin([]);
-    toast({ title: "Seat layout reset", description: "New random broken seats generated." });
-  }, [seatLayoutConfig, toast]);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [isLoadingMovies, setIsLoadingMovies] = useState(true);
 
   useEffect(() => {
-    initializeSeats();
-  }, [initializeSeats]);
-
-  const handleSeatClick = (seatId: string) => {
-    if (!isLocalAdminMode || currentBooking) return; 
-
-    const seat = seats.find(s => s.id === seatId);
-    if (!seat || seat.status === 'booked' || seat.status === 'broken') {
-      toast({ variant: "destructive", title: "Invalid Seat", description: "This seat cannot be selected."});
-      return;
-    }
-
-    setSelectedSeatIdsForAdmin(prevSelected =>
-      prevSelected.includes(seatId)
-        ? prevSelected.filter(id => id !== seatId)
-        : [...prevSelected, seatId]
-    );
-  };
-
-  const processBooking = (bookingDetails: BookingFormState) => {
-    if (currentBooking) {
-      toast({ variant: "destructive", title: "Existing Booking", description: "Please cancel the current booking before making a new one." });
-      return;
-    }
-    setIsLoading(true);
-    handleSeatAllocation(seats, bookingDetails)
-      .then(result => {
-        if (result.allocatedSeatIds && result.allocatedSeatIds.length > 0) {
-          const newBookingId = crypto.randomUUID();
-          const bookedSeatsList: Seat[] = [];
-
-          setSeats(prevSeats =>
-            prevSeats.map(s => {
-              if (result.allocatedSeatIds!.includes(s.id)) {
-                const bookedSeat = { ...s, status: 'booked' as const };
-                bookedSeatsList.push(bookedSeat);
-                return bookedSeat;
-              }
-              return s;
-            })
-          );
-          
-          setCurrentBooking({
-            id: newBookingId,
-            bookedSeats: bookedSeatsList,
-            ...bookingDetails,
-          });
-          toast({ title: "Booking Successful", description: result.message });
-        } else {
-          toast({ variant: "destructive", title: "Booking Failed", description: result.message });
+    const fetchMovies = async () => {
+      setIsLoadingMovies(true);
+      try {
+        const response = await fetch('/api/movies');
+        if (!response.ok) {
+          throw new Error('Failed to fetch movies');
         }
-      })
-      .catch(error => {
-        toast({ variant: "destructive", title: "Booking Error", description: error.message || "An unexpected error occurred." });
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  const handleAdminBookingConfirm = () => {
-    if (!isLocalAdminMode || selectedSeatIdsForAdmin.length === 0) return;
-
-    const newBookingId = crypto.randomUUID();
-    const adminBookedSeats: Seat[] = [];
-
-    setSeats(prevSeats =>
-      prevSeats.map(s => {
-        if (selectedSeatIdsForAdmin.includes(s.id)) {
-          const bookedSeat = { ...s, status: 'booked' as const };
-          adminBookedSeats.push(bookedSeat);
-          return bookedSeat;
-        }
-        return s;
-      })
-    );
-    
-    setCurrentBooking({
-      id: newBookingId,
-      bookedSeats: adminBookedSeats,
-      groupSize: adminBookedSeats.length,
-      requiresAccessibleSeating: false, 
-      wantsVipSeating: false,
-      seniorCitizen: false,
-    });
-    setSelectedSeatIdsForAdmin([]);
-    toast({ title: "Local Admin Booking Confirmed", description: `${adminBookedSeats.length} seats booked.` });
-  };
-
-  const handleCancelBooking = () => {
-    if (!currentBooking) return;
-    setSeats(prevSeats =>
-      prevSeats.map(s =>
-        currentBooking.bookedSeats.find(bs => bs.id === s.id)
-          ? { ...s, status: 'available' as const, isSelected: false }
-          : s
-      )
-    );
-    setCurrentBooking(null);
-    toast({ title: "Booking Cancelled", description: "Seats have been made available." });
-  };
-  
-  const toggleLocalAdminMode = (isAdmin: boolean) => {
-    setIsLocalAdminMode(isAdmin);
-    setSelectedSeatIdsForAdmin([]);
-    if (isAdmin) {
-      toast({title: "Local Admin Mode Enabled", description: "Seating rules can be bypassed for local testing."});
-    } else {
-      toast({title: "Local Admin Mode Disabled"});
-    }
-  };
+        const data = await response.json();
+        setMovies(data);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching movies',
+          description: (error as Error).message,
+        });
+      } finally {
+        setIsLoadingMovies(false);
+      }
+    };
+    fetchMovies();
+  }, [toast]);
 
   const authUser = session?.user as AuthUser | undefined;
 
@@ -153,9 +49,6 @@ export default function HomePage() {
       <header className="mb-8 flex flex-col sm:flex-row justify-between items-center">
         <CineSeatProLogo />
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-          <Button onClick={initializeSeats} variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4"/> Reset Seats
-          </Button>
           {status === 'loading' ? (
             <Button variant="outline" size="sm" disabled>Loading...</Button>
           ) : session ? (
@@ -182,40 +75,85 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          {seats.length > 0 ? (
-             <SeatingChart
-                seats={seats}
-                config={seatLayoutConfig}
-                onSeatClick={handleSeatClick}
-                selectedSeatIds={selectedSeatIdsForAdmin}
-                disabled={!isLocalAdminMode && !!currentBooking}
-             />
-          ) : (
-            <p>Loading seating chart...</p>
+      <main className="space-y-8">
+        <section>
+          <h2 className="text-3xl font-bold mb-6 text-center">Now Showing</h2>
+          {isLoadingMovies && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Card key={index} className="shadow-lg flex flex-col">
+                  <CardHeader>
+                    <Skeleton className="aspect-[2/3] w-full rounded-t-md" />
+                    <Skeleton className="h-6 w-3/4 mt-4" />
+                    <Skeleton className="h-4 w-1/2 mt-1" />
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </CardContent>
+                  <CardFooter className="border-t pt-4 mt-auto">
+                    <Skeleton className="h-10 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           )}
-        </div>
-
-        <aside className="lg:col-span-1 space-y-6 order-1 lg:order-2">
-          <AdminControls isAdminMode={isLocalAdminMode} onToggleAdminMode={toggleLocalAdminMode} />
-          <Separator />
-          {!isLocalAdminMode || currentBooking ? (
-            <BookingForm onSubmit={processBooking} isLoading={isLoading} defaultValues={currentBooking || undefined} />
-          ) : (
-            <p className="text-center text-muted-foreground p-4 border rounded-md">
-              Local Admin mode: Select seats directly on the chart.
-            </p>
+          {!isLoadingMovies && movies.length === 0 && (
+            <Card className="text-center py-12">
+              <CardHeader>
+                <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <CardTitle className="text-2xl">No Movies Available</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Check back later for new movie listings. Admins can add movies in the admin panel.
+                </p>
+                 {authUser?.role === 'admin' && (
+                    <Button asChild className="mt-4">
+                        <Link href="/admin/movies">Add Movies</Link>
+                    </Button>
+                 )}
+              </CardContent>
+            </Card>
           )}
-          <Separator />
-          <BookingSummary
-            currentBooking={currentBooking}
-            selectedSeats={seats.filter(s => selectedSeatIdsForAdmin.includes(s.id))}
-            isAdminMode={isLocalAdminMode}
-            onCancelBooking={handleCancelBooking}
-            onConfirmAdminBooking={handleAdminBookingConfirm}
-          />
-        </aside>
+          {!isLoadingMovies && movies.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {movies.map((movie) => (
+                <Card key={movie.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
+                  <CardHeader className="p-0">
+                    <div className="relative aspect-[2/3] w-full rounded-t-md overflow-hidden">
+                      <Image
+                        src={movie.posterUrl || `https://placehold.co/300x450.png?text=${encodeURIComponent(movie.title)}`}
+                        alt={movie.title}
+                        layout="fill"
+                        objectFit="cover"
+                        data-ai-hint="movie poster"
+                        className="bg-muted"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 flex-grow flex flex-col">
+                    <CardTitle className="text-xl mb-1">{movie.title}</CardTitle>
+                    {movie.duration && (
+                      <CardDescription className="text-xs mb-2">{movie.duration} minutes</CardDescription>
+                    )}
+                    <p className="text-sm text-muted-foreground line-clamp-3 flex-grow mb-3">
+                      {movie.description || 'No description available.'}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="p-4 border-t mt-auto">
+                    <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                      <Link href={`/booking/${movie.id}`}>
+                        <TicketIcon className="mr-2 h-5 w-5" /> Book Now
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
       <footer className="mt-12 text-center text-sm text-muted-foreground">
