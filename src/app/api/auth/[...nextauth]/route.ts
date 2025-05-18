@@ -3,7 +3,7 @@ import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { getDb } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import type { User, AuthUser } from '@/lib/types';
+import type { User as DbUser, AuthUser } from '@/lib/types'; // Renamed User to DbUser to avoid conflict with NextAuth User type
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,16 +19,18 @@ export const authOptions: NextAuthOptions = {
         }
 
         const db = await getDb();
-        const user = await db.get<User>('SELECT * FROM users WHERE email = ?', credentials.email);
+        // Use DbUser for the type from our database
+        const user = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
 
         if (user && user.hashedPassword && await bcrypt.compare(credentials.password, user.hashedPassword)) {
           // Return an object that will be stored in the JWT
+          // This object's shape is what the `user` parameter in the `jwt` callback will receive
           return {
-            id: user.id.toString(), // NextAuth expects id to be string in many contexts
+            id: user.id.toString(), // Ensure id is a string
             name: user.name,
             email: user.email,
             role: user.role,
-          } as any; // Type assertion can be common due to NextAuth's internal User type
+          };
         }
         return null; // Login failed
       }
@@ -39,32 +41,25 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Persist the user role and id to the token right after signin
-      // 'user' object is only available on first sign-in or when JWT is created.
+      // The `user` object is available on the first sign-in and is the return from the `authorize` callback
       if (user) {
-        token.id = user.id; // user.id is already string from authorize
-        token.role = (user as any).role; 
+        token.id = user.id; // user.id is already a string from authorize
+        token.role = user.role;
         token.name = user.name;
         token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
-      // Send properties to the client, like user id and role from the token.
+      // The `token` object contains the properties set in the `jwt` callback
+      // We need to ensure `session.user` conforms to our `AuthUser` type
       if (session.user) {
-        const authUser = session.user as AuthUser;
-        if (typeof token.id === 'string') {
-          authUser.id = token.id;
-        }
-        if (typeof token.role === 'string') {
-          authUser.role = token.role as 'user' | 'admin';
-        }
-        if (typeof token.name === 'string' || token.name === null) {
-            authUser.name = token.name;
-        }
-        if (typeof token.email === 'string') {
-            authUser.email = token.email;
-        }
+        // Explicitly cast session.user to AuthUser and assign properties from token
+        const sUser = session.user as AuthUser;
+        if (token.id) sUser.id = token.id as string;
+        if (token.role) sUser.role = token.role as 'user' | 'admin';
+        if (token.name !== undefined) sUser.name = token.name as string | null; // token.name could be null
+        if (token.email) sUser.email = token.email as string;
       }
       return session;
     }
@@ -80,4 +75,3 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-
