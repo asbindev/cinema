@@ -1,6 +1,7 @@
 
 import sqlite3 from 'sqlite3';
 import { open, type Database } from 'sqlite';
+import bcrypt from 'bcryptjs';
 
 // Ensure sqlite3 is verbose in development for easier debugging
 if (process.env.NODE_ENV === 'development') {
@@ -8,6 +9,30 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 let db: Database | null = null;
+
+async function seedAdminUser(database: Database) {
+  const adminEmail = 'admin@test.com';
+  const adminPassword = 'Test@123'; // This will be hashed
+
+  try {
+    const existingAdmin = await database.get('SELECT id FROM users WHERE email = ? AND role = ?', adminEmail, 'admin');
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await database.run(
+        'INSERT INTO users (email, hashedPassword, role, name) VALUES (?, ?, ?, ?)',
+        adminEmail,
+        hashedPassword,
+        'admin',
+        'Administrator'
+      );
+      console.log(`Admin user ${adminEmail} created.`);
+    } else {
+      console.log(`Admin user ${adminEmail} already exists.`);
+    }
+  } catch (error) {
+    console.error(`Failed to seed admin user ${adminEmail}:`, error);
+  }
+}
 
 export async function getDb() {
   if (!db) {
@@ -42,8 +67,12 @@ export async function getDb() {
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `);
-
+      
       console.log('Database connected and tables ensured.');
+
+      // Seed the admin user
+      await seedAdminUser(db);
+
     } catch (error) {
       console.error('Failed to connect to the database or ensure tables:', error);
       throw error; // Re-throw the error to indicate failure
@@ -51,3 +80,4 @@ export async function getDb() {
   }
   return db;
 }
+
