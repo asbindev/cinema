@@ -14,25 +14,38 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
+        try {
+          if (!credentials?.email || !credentials.password) {
+            console.warn("Authorize: Missing credentials.");
+            return null;
+          }
 
-        const db = await getDb();
-        // Use DbUser for the type from our database
-        const user = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
+          const db = await getDb();
+          const user = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
 
-        if (user && user.hashedPassword && await bcrypt.compare(credentials.password, user.hashedPassword)) {
-          // Return an object that will be stored in the JWT
-          // This object's shape is what the `user` parameter in the `jwt` callback will receive
-          return {
-            id: user.id.toString(), // Ensure id is a string
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          };
+          if (user && user.hashedPassword) {
+            const passwordsMatch = await bcrypt.compare(credentials.password, user.hashedPassword);
+            if (passwordsMatch) {
+              console.log(`Authorize: Authentication successful for ${user.email}`);
+              return {
+                id: user.id.toString(),
+                name: user.name,
+                email: user.email,
+                role: user.role,
+              };
+            } else {
+              console.warn(`Authorize: Password mismatch for ${credentials.email}`);
+            }
+          } else {
+            console.warn(`Authorize: User ${credentials.email} not found or has no password.`);
+          }
+          return null; // Login failed
+        } catch (error) {
+          console.error("Authorize error during authentication process:", error);
+          // Return null to indicate login failure to NextAuth, 
+          // rather than letting an unhandled exception crash the server process.
+          return null; 
         }
-        return null; // Login failed
       }
     })
   ],
@@ -41,24 +54,20 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // The `user` object is available on the first sign-in and is the return from the `authorize` callback
       if (user) {
-        token.id = user.id; // user.id is already a string from authorize
-        token.role = user.role;
+        token.id = user.id;
+        token.role = user.role as 'user' | 'admin'; // user comes from authorize which has role
         token.name = user.name;
         token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
-      // The `token` object contains the properties set in the `jwt` callback
-      // We need to ensure `session.user` conforms to our `AuthUser` type
       if (session.user) {
-        // Explicitly cast session.user to AuthUser and assign properties from token
         const sUser = session.user as AuthUser;
         if (token.id) sUser.id = token.id as string;
         if (token.role) sUser.role = token.role as 'user' | 'admin';
-        if (token.name !== undefined) sUser.name = token.name as string | null; // token.name could be null
+        if (token.name !== undefined) sUser.name = token.name as string | null;
         if (token.email) sUser.email = token.email as string;
       }
       return session;
@@ -66,8 +75,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
-    // error: '/auth/error', // (optional) Error code passed in query string as ?error=
-    // newUser: '/auth/new-user' // (optional) New users will be directed here on first sign in
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
