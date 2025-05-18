@@ -8,15 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Film, Users, LogOut, UserCircle, Home } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { redirect, usePathname } from 'next/navigation';
-import { CineSeatProLogo } from '@/components/CineSeatProLogo'; // Assuming you have this or similar
+import { CineSeatProLogo } from '@/components/CineSeatProLogo';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Metadata can still be exported from client components in Next.js 13+ App Router
-// export const metadata: Metadata = {
-//   title: 'CineSeat Pro - Admin',
-//   description: 'Admin panel for CineSeat Pro.',
-// };
-// However, for dynamic titles based on session, it's better to handle in page components or use a Head component.
+import type { AuthUser } from '@/lib/types';
 
 
 export default function AdminLayout({
@@ -33,7 +27,7 @@ export default function AdminLayout({
          <header className="bg-primary text-primary-foreground p-4 shadow-md">
             <div className="container mx-auto flex justify-between items-center">
               <Link href="/admin" className="text-2xl font-bold">
-                CineSeat Pro Admin
+                <CineSeatProLogo /> Admin
               </Link>
               <Skeleton className="h-8 w-24" />
             </div>
@@ -57,15 +51,18 @@ export default function AdminLayout({
     );
   }
 
-  if (status === 'unauthenticated') {
-    // Store the current path to redirect back after login
+  // If unauthenticated, or if session/user is somehow missing even if status isn't 'loading'
+  if (status === 'unauthenticated' || !session || !session.user) {
     const callbackUrl = encodeURIComponent(pathname || '/admin');
     redirect(`/login?callbackUrl=${callbackUrl}`);
-    return null; // Redirect will handle it
+    return null; // redirect will handle it, this line is for type safety and to stop further rendering.
   }
   
+  // At this point, status is 'authenticated' and session & session.user exist.
+  const authUser = session.user as AuthUser;
+
   // Optional: Check for admin role if you have one
-  // if (session?.user?.role !== 'admin') {
+  // if (authUser.role !== 'admin') {
   //   redirect('/'); // Or a "not authorized" page
   //   return null;
   // }
@@ -78,9 +75,9 @@ export default function AdminLayout({
             <CineSeatProLogo /> Admin
           </Link>
           <nav className="space-x-4 flex items-center">
-            {session?.user?.email && (
+            {authUser.email && (
               <span className="text-sm flex items-center">
-                <UserCircle className="mr-1.5 h-5 w-5" /> {session.user.email}
+                <UserCircle className="mr-1.5 h-5 w-5" /> {authUser.email}
               </span>
             )}
             <Button variant="ghost" onClick={() => signOut({ callbackUrl: '/' })}>
