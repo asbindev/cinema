@@ -36,7 +36,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
     setSeats(initialSeats);
     setCurrentBooking(null);
     setSelectedSeatIdsForAdmin([]);
-    if (seats.length > 0) { 
+    if (seats.length > 0) {
         toast({ title: "Seat layout reset", description: "New random broken seats generated." });
     }
   }, [seatLayoutConfig, toast, seats.length]);
@@ -63,14 +63,14 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   };
 
   const saveBookingToDb = async (
-    allocatedSeatIds: string[], 
+    allocatedSeatIds: string[],
     bookingDetails: BookingFormState
   ): Promise<string | null> => {
     if (!movie) {
       toast({ variant: "destructive", title: "Booking Error", description: "Movie information is missing." });
       return null;
     }
-    
+
     const payload: NewBookingPayload = {
       movieId: movie.id,
       movieTitle: movie.title,
@@ -108,34 +108,52 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
     setIsLoading(true);
     try {
         const result = await handleSeatAllocation(seats, bookingDetails);
-        if (result.allocatedSeatIds && result.allocatedSeatIds.length > 0) {
-            const dbBookingId = await saveBookingToDb(result.allocatedSeatIds, bookingDetails);
+        // Ensure allocatedSeatIds is an array and make it unique
+        const uniqueAllocatedSeatIds = result.allocatedSeatIds && Array.isArray(result.allocatedSeatIds)
+                                          ? Array.from(new Set(result.allocatedSeatIds))
+                                          : [];
+
+        if (uniqueAllocatedSeatIds.length > 0) {
+            const dbBookingId = await saveBookingToDb(uniqueAllocatedSeatIds, bookingDetails);
             if (!dbBookingId) {
-                // Error handled by saveBookingToDb toast
                 setIsLoading(false);
                 return;
             }
 
-            const bookedSeatsList: Seat[] = [];
+            // Create the list of seat objects for the current booking summary
+            const bookedSeatsForSummary: Seat[] = [];
+            uniqueAllocatedSeatIds.forEach(idToBook => {
+                const originalSeat = seats.find(s => s.id === idToBook); // Find from the current full list
+                if (originalSeat) {
+                    bookedSeatsForSummary.push({
+                        ...originalSeat,
+                        status: 'booked' as const, // Mark as booked for the summary
+                        isSelected: false, // Not selected in the context of the summary itself
+                    });
+                }
+            });
+            // Optional: Sort for consistent display in summary
+            bookedSeatsForSummary.sort((a, b) => a.id.localeCompare(b.id));
+
+
+            // Update the main seats state to mark these seats as booked
             setSeats(prevSeats =>
                 prevSeats.map(s => {
-                if (result.allocatedSeatIds!.includes(s.id)) {
-                    const bookedSeat = { ...s, status: 'booked' as const, isSelected: false };
-                    bookedSeatsList.push(bookedSeat);
-                    return bookedSeat;
+                if (uniqueAllocatedSeatIds.includes(s.id)) {
+                    return { ...s, status: 'booked' as const, isSelected: false };
                 }
                 return s;
                 })
             );
-            
+
             setCurrentBooking({
-                id: dbBookingId, // Use database booking ID
-                bookedSeats: bookedSeatsList,
+                id: dbBookingId,
+                bookedSeats: bookedSeatsForSummary, // Use the unique list of seat objects
                 ...bookingDetails,
             });
-            toast({ title: "Booking Successful", description: result.message });
+            toast({ title: "Booking Successful", description: result.message || `${uniqueAllocatedSeatIds.length} seats booked.` });
         } else {
-            toast({ variant: "destructive", title: "Booking Failed", description: result.message });
+            toast({ variant: "destructive", title: "Booking Failed", description: result.message || "No seats were allocated." });
         }
     } catch (error) {
         toast({ variant: "destructive", title: "Booking Error", description: (error as Error).message || "An unexpected error occurred." });
@@ -150,43 +168,53 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
 
     const adminBookingDetails: BookingFormState = {
         groupSize: selectedSeatIdsForAdmin.length,
-        requiresAccessibleSeating: false, // Default for admin manual booking
-        wantsVipSeating: false, // Default
-        seniorCitizen: false, // Default
+        requiresAccessibleSeating: false,
+        wantsVipSeating: false,
+        seniorCitizen: false,
     };
 
+    // selectedSeatIdsForAdmin is expected to be unique by its update logic
     const dbBookingId = await saveBookingToDb(selectedSeatIdsForAdmin, adminBookingDetails);
     if (!dbBookingId) {
         setIsLoading(false);
         return;
     }
-    
-    const adminBookedSeatsObjects: Seat[] = [];
+
+    const adminBookedSeatsForSummary: Seat[] = [];
+    selectedSeatIdsForAdmin.forEach(idToBook => {
+        const originalSeat = seats.find(s => s.id === idToBook);
+        if (originalSeat) {
+            adminBookedSeatsForSummary.push({
+                ...originalSeat,
+                status: 'booked' as const,
+                isSelected: false,
+            });
+        }
+    });
+    adminBookedSeatsForSummary.sort((a, b) => a.id.localeCompare(b.id));
+
+
     setSeats(prevSeats =>
       prevSeats.map(s => {
         if (selectedSeatIdsForAdmin.includes(s.id)) {
-          const bookedSeat = { ...s, status: 'booked' as const, isSelected: false };
-          adminBookedSeatsObjects.push(bookedSeat);
-          return bookedSeat;
+          return { ...s, status: 'booked' as const, isSelected: false };
         }
         return s;
       })
     );
-    
+
     setCurrentBooking({
       id: dbBookingId,
-      bookedSeats: adminBookedSeatsObjects,
+      bookedSeats: adminBookedSeatsForSummary,
       ...adminBookingDetails,
     });
     setSelectedSeatIdsForAdmin([]);
-    toast({ title: "Admin Booking Confirmed", description: `${adminBookedSeatsObjects.length} seats booked and saved.` });
+    toast({ title: "Admin Booking Confirmed", description: `${adminBookedSeatsForSummary.length} seats booked and saved.` });
     setIsLoading(false);
   };
 
   const handleCancelBooking = () => {
     if (!currentBooking) return;
-    // Note: We are not deleting from DB here, just making seats available locally.
-    // A full cancel would need a DELETE /api/bookings/:id call.
     setSeats(prevSeats =>
       prevSeats.map(s =>
         currentBooking.bookedSeats.find(bs => bs.id === s.id)
@@ -197,11 +225,11 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
     setCurrentBooking(null);
     toast({ title: "Booking Cancelled Locally", description: "Seats have been made available on the chart. Booking still exists in DB." });
   };
-  
+
   const toggleLocalAdminMode = (isAdmin: boolean) => {
     setIsLocalAdminMode(isAdmin);
-    setSelectedSeatIdsForAdmin([]); 
-    if (currentBooking && !isAdmin) handleCancelBooking(); 
+    setSelectedSeatIdsForAdmin([]);
+    if (currentBooking && !isAdmin) handleCancelBooking();
 
     if (isAdmin) {
       toast({title: "Local Admin Mode Enabled", description: "Seating rules can be bypassed for local testing."});
@@ -209,7 +237,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       toast({title: "Local Admin Mode Disabled"});
     }
   };
-  
+
   const canUseAdminControls = authUser?.role === 'admin';
 
   return (
@@ -249,7 +277,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         <BookingSummary
         currentBooking={currentBooking}
         selectedSeats={seats.filter(s => selectedSeatIdsForAdmin.includes(s.id))}
-        isAdminMode={isLocalAdminMode && canUseAdminControls} 
+        isAdminMode={isLocalAdminMode && canUseAdminControls}
         onCancelBooking={handleCancelBooking}
         onConfirmAdminBooking={handleAdminBookingConfirm}
         />
