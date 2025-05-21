@@ -1,7 +1,7 @@
 
 'use client';
 import type React from 'react';
-import { Armchair, Star, Accessibility, Ban, UserCheck, CheckCircle2, Elderly, ShieldAlert } from 'lucide-react';
+import { Armchair, Star, Accessibility, Ban, UserCheck, CheckCircle2, UserRound, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Seat, SeatStatus, SeatCategory } from '@/lib/types';
@@ -24,7 +24,7 @@ const SeatIcon: React.FC<{ category: SeatCategory, status: SeatStatus, isSelecte
     case 'accessible':
       return <Accessibility className="h-4 w-4 sm:h-5 sm:w-5" />;
     case 'senior':
-      return <Elderly className="h-4 w-4 sm:h-5 sm:w-5" />;
+      return <UserRound className="h-4 w-4 sm:h-5 sm:w-5" />;
     case 'ageRestricted':
       return <ShieldAlert className="h-4 w-4 sm:h-5 sm:w-5" />;
     default: // regular

@@ -5,7 +5,7 @@ import { SeatComponent } from './Seat';
 import type { Seat, SeatLayoutConfig } from '@/lib/types';
 import { getAisleAfterSeat } from '@/lib/seat-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Armchair, Star, Accessibility, Ban, CheckCircle2, UserCheck, Elderly, ShieldAlert } from 'lucide-react';
+import { Armchair, Star, Accessibility, Ban, CheckCircle2, UserCheck, UserRound, ShieldAlert } from 'lucide-react';
 
 interface SeatingChartProps {
   seats: Seat[];
@@ -71,7 +71,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({ seats, config, onSea
             <LegendItem colorClass="bg-seat-available-regular" iconColorClass="text-seat-available-regular-foreground" icon={Armchair} label="Regular" />
             <LegendItem colorClass="bg-seat-available-vip" iconColorClass="text-seat-available-vip-foreground" icon={Star} label="VIP" />
             <LegendItem colorClass="bg-seat-available-accessible" iconColorClass="text-seat-available-accessible-foreground" icon={Accessibility} label="Accessible" /> 
-            <LegendItem colorClass="bg-seat-available-senior" iconColorClass="text-seat-available-senior-foreground" icon={Elderly} label="Senior" />
+            <LegendItem colorClass="bg-seat-available-senior" iconColorClass="text-seat-available-senior-foreground" icon={UserRound} label="Senior" />
             <LegendItem colorClass="bg-seat-available-age-restricted" iconColorClass="text-seat-available-age-restricted-foreground" icon={ShieldAlert} label="Age Restricted" />
             <LegendItem colorClass="bg-seat-selected" iconColorClass="text-seat-selected-foreground" icon={UserCheck} label="Selected" />
             <LegendItem colorClass="bg-seat-booked" iconColorClass="text-seat-booked-foreground" icon={CheckCircle2} label="Booked" />
