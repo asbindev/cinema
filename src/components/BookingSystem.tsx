@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 
 
 interface BookingSystemProps {
-  movie?: Movie | null; 
+  movie?: Movie | null;
 }
 
 interface SelectionValidationResult {
@@ -58,7 +58,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   useEffect(() => {
     initializeSeats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
   const getSelectionValidation = useCallback((
     selectedIds: string[],
@@ -81,7 +81,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       }
     }
 
-    if (details.ageOfYoungestMember !== undefined && !details.seniorCitizen) {
+    if (details.ageOfYoungestMember !== undefined && !details.seniorCitizen) { // Basic age check for non-senior override
       const ageRequirementMet = selectedIds.every(id => {
         const seat = allSeats.find(s => s.id === id);
         return !seat?.ageRestriction || seat.ageRestriction <= details.ageOfYoungestMember!;
@@ -99,7 +99,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       const validation = getSelectionValidation(userSelectedSeatIds, pendingBookingDetails, seats);
       setSelectionValidation(validation);
     } else {
-      setSelectionValidation({ isValid: false, message: '' }); 
+      setSelectionValidation({ isValid: false, message: '' });
     }
   }, [userSelectedSeatIds, pendingBookingDetails, seats, getSelectionValidation]);
 
@@ -110,12 +110,12 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       toast({ variant: "destructive", title: "Invalid Seat", description: "This seat is broken."});
       return;
     }
-    if (seat.status === 'booked' && !(isLocalAdminMode && currentBooking?.bookedSeats.some(s => s.id === seatId))) { 
+    if (seat.status === 'booked' && !(isLocalAdminMode && currentBooking?.bookedSeats.some(s => s.id === seatId))) {
       toast({ variant: "destructive", title: "Seat Unavailable", description: "This seat is already booked."});
       return;
     }
 
-    if (pendingBookingDetails) { 
+    if (pendingBookingDetails) {
       setUserSelectedSeatIds(prevSelected => {
         const isCurrentlySelected = prevSelected.includes(seatId);
         if (isCurrentlySelected) {
@@ -132,7 +132,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
           return [...prevSelected, seatId];
         }
       });
-    } else if (isLocalAdminMode && !currentBooking) { 
+    } else if (isLocalAdminMode && !currentBooking) {
         setUserSelectedSeatIds(prevSelected =>
         prevSelected.includes(seatId)
             ? prevSelected.filter(id => id !== seatId)
@@ -142,7 +142,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         toast({ title: "Login Required", description: "Please log in to select seats."});
     }
      else {
-        toast({ title: "Info", description: "Use the booking form to find seats or enable admin mode for manual selection."});
+        toast({ title: "Info", description: "Use the booking form to find seats with AI or enable admin mode for manual selection."});
     }
   };
 
@@ -158,12 +158,12 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       toast({ variant: "destructive", title: "Booking Error", description: "No seats selected for booking." });
       return null;
     }
-     if (!isAuthenticated) {
+     if (!isAuthenticated || !authUser) {
       toast({ variant: "destructive", title: "Login Required", description: "You must be logged in to make a booking." });
       return null;
     }
 
-    const payload: NewBookingPayload = {
+    const payload: Omit<NewBookingPayload, 'userId' | 'userEmail'> = { // userId and userEmail are handled by API
       movieId: movie.id,
       movieTitle: movie.title,
       seatIds: allocatedSeatIds,
@@ -182,13 +182,16 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         const errorData = await response.json();
         if (response.status === 401 || response.status === 403) {
              toast({ variant: "destructive", title: "Authentication Error", description: errorData.message || "Please log in to book seats."});
-        } else {
+        } else if (response.status === 409) { // Conflict, e.g., seats already booked
+            toast({ variant: "destructive", title: "Booking Conflict", description: errorData.message || "Some selected seats are no longer available. Please refresh."});
+        }
+        else {
             throw new Error(errorData.message || 'Failed to save booking to database');
         }
         return null;
       }
-      const savedBooking = await response.json();
-      return savedBooking.id; 
+      const savedBooking: BookingEntry = await response.json(); // Assuming API returns the full BookingEntry
+      return savedBooking.id;
     } catch (error) {
       toast({ variant: "destructive", title: "Database Error", description: (error as Error).message });
       return null;
@@ -215,7 +218,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
 
         if (uniqueAllocatedSeatIds.length > 0) {
             setPendingBookingDetails(bookingDetails);
-            setUserSelectedSeatIds(uniqueAllocatedSeatIds); 
+            setUserSelectedSeatIds(uniqueAllocatedSeatIds);
             toast({ title: "AI Suggestion", description: result.message || `${uniqueAllocatedSeatIds.length} seats suggested. Review and confirm.` });
         } else {
             toast({ variant: "destructive", title: "AI Booking Failed", description: result.message || "No seats were allocated by AI." });
@@ -236,13 +239,13 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         toast({ variant: "destructive", title: "Confirmation Error", description: "No pending booking or seats selected to confirm." });
         return;
     }
-    
+
     const validation = getSelectionValidation(userSelectedSeatIds, pendingBookingDetails, seats);
     if (!validation.isValid) {
       toast({ variant: "destructive", title: "Invalid Selection", description: validation.message });
       return;
     }
-    
+
     const dbBookingId = await saveBookingToDb(userSelectedSeatIds, pendingBookingDetails);
     if (dbBookingId) {
         const confirmedSeatsForSummary: Seat[] = [];
@@ -261,6 +264,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         setCurrentBooking({
             id: dbBookingId,
             bookedSeats: confirmedSeatsForSummary,
+            // groupSize, requiresAccessibleSeating, etc. are from pendingBookingDetails
             ...pendingBookingDetails,
         });
         setPendingBookingDetails(null);
@@ -269,26 +273,27 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         toast({ title: "Booking Confirmed!", description: `${confirmedSeatsForSummary.length} seats successfully booked.` });
     }
   };
-  
+
   const handleAdminBookingConfirm = async () => {
-    if (!isAuthenticated && authUser?.role !== 'admin') { // Allow admin even if session is briefly loading
+    if (!authUser || authUser?.role !== 'admin') {
       toast({ variant: "destructive", title: "Admin Login Required", description: "Only admins can perform this action." });
       return;
     }
     if (!isLocalAdminMode || userSelectedSeatIds.length === 0) return;
 
-    const adminBookingDetails: BookingFormState = { 
+    const adminBookingDetails: BookingFormState = {
         groupSize: userSelectedSeatIds.length,
         requiresAccessibleSeating: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'accessible'),
         wantsVipSeating: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'vip'),
         seniorCitizen: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'senior'),
+        // ageOfYoungestMember might not be relevant for direct admin booking, or could be a fixed value
     };
-    
+
     const dbBookingId = await saveBookingToDb(userSelectedSeatIds, adminBookingDetails);
     if (dbBookingId) {
         const adminBookedSeatsForSummary: Seat[] = [];
          const sortedSelectedIds = [...userSelectedSeatIds].sort((a,b) => a.localeCompare(b));
-        
+
         sortedSelectedIds.forEach(idToBook => {
             const originalSeat = seats.find(s => s.id === idToBook);
             if (originalSeat) {
@@ -309,18 +314,45 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
     }
   };
 
-  const handleCancelCurrentBooking = () => { 
-    if (!currentBooking) return;
-    setSeats(prevSeats =>
-      prevSeats.map(s =>
-        currentBooking.bookedSeats.find(bs => bs.id === s.id)
-          ? { ...s, status: 'available', isSelected: false }
-          : s
-      )
-    );
-    setCurrentBooking(null);
-    toast({ title: "Confirmed Booking Cancelled (Locally)", description: "Seats are available again on this chart. The booking might still exist in the database if not handled by a dedicated cancellation API." });
+  const handleCancelCurrentBooking = async () => {
+    if (!currentBooking || !currentBooking.id) {
+        toast({ variant: "destructive", title: "Cancellation Error", description: "No active booking to cancel." });
+        return;
+    }
+    if (!isAuthenticated) {
+        toast({ variant: "destructive", title: "Login Required", description: "Please log in to cancel a booking." });
+        return;
+    }
+
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/bookings/${currentBooking.id}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to cancel booking on server.");
+        }
+
+        // If server deletion is successful, update local state
+        setSeats(prevSeats =>
+            prevSeats.map(s =>
+                currentBooking.bookedSeats.find(bs => bs.id === s.id)
+                ? { ...s, status: 'available', isSelected: false } // Reset status to available
+                : s
+            )
+        );
+        setCurrentBooking(null);
+        toast({ title: "Booking Cancelled", description: "Your booking has been successfully cancelled." });
+
+    } catch (error) {
+        toast({ variant: "destructive", title: "Cancellation Failed", description: (error as Error).message });
+    } finally {
+        setIsLoading(false);
+    }
   };
+
 
   const handleClearPendingOrAdminSelection = () => {
     setPendingBookingDetails(null);
@@ -331,9 +363,9 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
 
   const toggleLocalAdminMode = (isAdmin: boolean) => {
     setIsLocalAdminMode(isAdmin);
-    setUserSelectedSeatIds([]); 
+    setUserSelectedSeatIds([]);
     setSelectionValidation({ isValid: false, message: '' });
-    if (currentBooking && !isAdmin) handleCancelCurrentBooking(); 
+    if (currentBooking && !isAdmin && isAuthenticated) handleCancelCurrentBooking(); // Only attempt cancel if user is logged in
     if (pendingBookingDetails && !isAdmin) handleClearPendingOrAdminSelection();
 
     if (isAdmin) {
@@ -345,6 +377,15 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
 
   const canUseAdminControls = authUser?.role === 'admin';
   const isReviewingAiSuggestion = !!pendingBookingDetails;
+
+  if (!movie && !isLoading) {
+    return (
+        <Card>
+            <CardHeader><CardTitle>Movie Not Loaded</CardTitle></CardHeader>
+            <CardContent><p>The movie details could not be loaded. Please try again.</p></CardContent>
+        </Card>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -360,7 +401,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
             config={seatLayoutConfig}
             onSeatClick={handleSeatClick}
             selectedSeatIds={userSelectedSeatIds}
-            disabled={isLoading || (!!currentBooking && !isLocalAdminMode) || (!isAuthenticated && !isLocalAdminMode)} 
+            disabled={isLoading || (!!currentBooking && !isLocalAdminMode && !pendingBookingDetails) || (!isAuthenticated && !isLocalAdminMode)}
             />
         ) : (
         <p>Loading seating chart...</p>
@@ -415,9 +456,9 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
                     )}
                  </CardContent>
                 <CardFooter className="flex flex-col space-y-2">
-                    <Button 
-                        onClick={handleConfirmFinalBooking} 
-                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" 
+                    <Button
+                        onClick={handleConfirmFinalBooking}
+                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                         disabled={isLoading || !selectionValidation.isValid || !isAuthenticated}
                     >
                         <CheckSquare className="mr-2 h-4 w-4" /> Confirm Booking
@@ -428,7 +469,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
                 </CardFooter>
             </Card>
         )}
-        
+
         {isLocalAdminMode && !pendingBookingDetails && !currentBooking && (
              <Card className="shadow-lg">
                 <CardHeader>
@@ -438,7 +479,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
                     </CardDescription>
                 </CardHeader>
                 <CardFooter>
-                    <Button onClick={handleAdminBookingConfirm} className="w-full" disabled={isLoading || userSelectedSeatIds.length === 0 || (!isAuthenticated && authUser?.role !== 'admin')}>
+                    <Button onClick={handleAdminBookingConfirm} className="w-full" disabled={isLoading || userSelectedSeatIds.length === 0 || (!authUser || authUser?.role !== 'admin')}>
                         <CheckSquare className="mr-2 h-4 w-4" /> Confirm Admin Booking
                     </Button>
                 </CardFooter>
@@ -452,13 +493,12 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
             adminSelectedSeats={isLocalAdminMode && !isReviewingAiSuggestion && !currentBooking ? seats.filter(s => userSelectedSeatIds.includes(s.id)) : null}
             isAdminMode={isLocalAdminMode && canUseAdminControls}
             onCancelConfirmedBooking={handleCancelCurrentBooking}
-            onConfirmAdminBooking={handleAdminBookingConfirm} 
+            onConfirmAdminBooking={handleAdminBookingConfirm}
             onClearPendingOrAdminSelection={handleClearPendingOrAdminSelection}
-            onConfirmPendingBooking={handleConfirmFinalBooking} 
+            onConfirmPendingBooking={handleConfirmFinalBooking}
             isReviewingAiSuggestion={isReviewingAiSuggestion}
         />
       </aside>
     </div>
   );
 };
-    
