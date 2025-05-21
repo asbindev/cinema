@@ -1,4 +1,4 @@
-# **App Name**: CineSeat Pro
+# **App Name**: Karma Seat
 
 ## Core Features:
 

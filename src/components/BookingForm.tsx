@@ -121,7 +121,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmit, isLoading, d
         <CardFooter>
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isLoading ? 'Finding Seats...' : 'Find Seats with AI'}
+            {isLoading ? 'Finding Seats...' : 'Find Seats with Selected Options'}
           </Button>
         </CardFooter>
       </form>

@@ -46,7 +46,7 @@ export default function AdminLayout({
             </main>
           </div>
            <footer className="bg-muted text-muted-foreground text-center p-4">
-             &copy; {new Date().getFullYear()} CineSeat Pro Admin Panel
+             &copy; {new Date().getFullYear()} Karma Seat Admin Panel
            </footer>
         </div>
     );
@@ -121,7 +121,7 @@ export default function AdminLayout({
         </main>
       </div>
       <footer className="bg-muted text-muted-foreground text-center p-4">
-        &copy; {new Date().getFullYear()} CineSeat Pro Admin Panel
+        &copy; {new Date().getFullYear()} Karma Seat Admin Panel
       </footer>
     </div>
   );

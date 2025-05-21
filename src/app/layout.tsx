@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'CineSeat Pro', 
+  title: 'Karma Seat', 
   description: 'Intelligent movie hall seat booking system.', 
 };
 

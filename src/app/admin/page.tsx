@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Film, Users, LayoutDashboard, Ticket } from 'lucide-react'; // Added Ticket icon
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard - CineSeat Pro',
-  description: 'Welcome to the CineSeat Pro Admin Dashboard.',
+  title: 'Admin Dashboard - Karma Seat',
+  description: 'Welcome to the Karma Seat Admin Dashboard.',
 };
 
 export default function AdminDashboardPage() {
@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
       <p className="text-lg text-muted-foreground">
-        Welcome to the CineSeat Pro administration panel. Manage your application settings from here.
+        Welcome to the Karma Seat administration panel. Manage your application settings from here.
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

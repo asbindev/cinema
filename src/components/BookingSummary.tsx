@@ -137,7 +137,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground">
-            {isAdminMode ? "Admin mode active. Select seats on the chart or use the form for AI suggestions." : "Use the form above to find seats with AI."}
+            {isAdminMode ? "Admin mode active. Select seats on the chart or use the form for AI suggestions." : "Use the form above to Find Seats with Selected Options."}
         </p>
       </CardContent>
     </Card>

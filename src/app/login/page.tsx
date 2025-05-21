@@ -77,7 +77,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold flex items-center justify-center">
-            <LogIn className="mr-2 h-8 w-8 text-primary" /> Login to CineSeat Pro
+            <LogIn className="mr-2 h-8 w-8 text-primary" /> Login to Karma Seat
           </CardTitle>
           <CardDescription>Enter your credentials to access your account.</CardDescription>
         </CardHeader>

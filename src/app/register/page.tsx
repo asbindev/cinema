@@ -82,7 +82,7 @@ export default function RegisterPage() {
           <CardTitle className="text-3xl font-bold flex items-center justify-center">
             <UserPlus className="mr-2 h-8 w-8 text-primary" /> Create Account
           </CardTitle>
-          <CardDescription>Join CineSeat Pro today!</CardDescription>
+          <CardDescription>Join Karma Seat today!</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
