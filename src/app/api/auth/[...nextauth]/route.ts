@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log("Authorize attempt for:", credentials?.email);
         try {
           if (!credentials?.email || !credentials.password) {
             console.warn("Authorize: Missing credentials.");
@@ -26,10 +27,10 @@ export const authOptions: NextAuthOptions = {
           if (userFromDb && userFromDb.hashedPassword) {
             const passwordsMatch = await bcrypt.compare(credentials.password, userFromDb.hashedPassword);
             if (passwordsMatch) {
-              console.log(`Authorize: Authentication successful for ${userFromDb.email}`);
+              console.log(`Authorize: Authentication successful for ${userFromDb.email}, role: ${userFromDb.role}`);
               // Ensure the returned object matches what JWT and session callbacks expect
               return {
-                id: userFromDb.id.toString(),
+                id: userFromDb.id.toString(), // NextAuth expects id as string for JWT
                 name: userFromDb.name,
                 email: userFromDb.email,
                 role: userFromDb.role, // This role comes from the database
@@ -43,7 +44,7 @@ export const authOptions: NextAuthOptions = {
           return null; // Login failed
         } catch (error) {
           console.error("Authorize error during authentication process:", error);
-          return null;
+          return null; // Crucial to return null on error
         }
       }
     })
@@ -55,17 +56,18 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // The 'user' object here is the one returned by the 'authorize' callback
       if (user) {
-        const authUser = user as AuthUser; // Cast to our specific AuthUser type
-        token.id = authUser.id;
-        token.role = authUser.role; // Use the role from the user object
-        token.name = authUser.name;
-        token.email = authUser.email;
+        // This is the initial sign-in
+        token.id = user.id; // id is already string from authorize
+        token.role = (user as AuthUser).role; 
+        token.name = user.name;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
+      // Token contains what we put in it in the jwt callback
       if (session.user) {
-        const sUser = session.user as AuthUser;
+         const sUser = session.user as AuthUser; // Cast to ensure type safety
         if (token.id) sUser.id = token.id as string;
         if (token.role) sUser.role = token.role as 'user' | 'admin';
         if (token.name !== undefined) sUser.name = token.name as string | null;
@@ -76,8 +78,13 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
+    // signOut: '/auth/signout', // Optional: custom signout page
+    // error: '/auth/error', // Optional: Error code passed in query string as ?error=
+    // verifyRequest: '/auth/verify-request', // Optional: (e.g. check your email)
+    // newUser: '/auth/new-user' // Optional: New users will be directed here on first sign in
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development', // Enable debug messages in development
 };
 
 const handler = NextAuth(authOptions);

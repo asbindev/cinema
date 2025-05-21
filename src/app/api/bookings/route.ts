@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Unauthorized. Please log in to make a booking.' }, { status: 401 });
     }
     const authUser = session.user as AuthUser;
-    if (!authUser.id || !authUser.email) {
+    if (!authUser.id || !authUser.email) { // authUser.id is string from session
         return NextResponse.json({ message: 'User session is invalid or incomplete.' }, { status: 400 });
     }
 
@@ -52,10 +52,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const finalUserId = parseInt(authUser.id, 10);
+    const finalUserId = parseInt(authUser.id, 10); // Convert string ID from session to number for DB
     if (isNaN(finalUserId)) {
-        // This should ideally not happen if session.user.id is always a string convertible to number
-        console.error("Failed to parse session user ID:", authUser.id);
+        console.error("Failed to parse session user ID to number:", authUser.id);
         return NextResponse.json({ message: 'Invalid user ID in session.' }, { status: 500 });
     }
     const finalUserEmail = authUser.email;
@@ -77,12 +76,14 @@ export async function POST(request: Request) {
       bookingTime
     );
     
-    if (result.changes === 0) {
+    if (!result.lastID && result.changes === 0) { // Check if insert actually happened. lastID might not be set for non-autoincrement PKs, but changes should be > 0
+        // Verify insertion manually if lastID is not reliable for UUIDs
         const check = await db.get('SELECT id FROM bookings WHERE id = ?', bookingId);
         if (!check) {
            throw new Error('Failed to insert booking, verification query failed.');
         }
     }
+
 
     const newBooking: BookingEntry = {
       id: bookingId,
@@ -107,24 +108,24 @@ export async function POST(request: Request) {
 // GET /api/bookings - Fetch all bookings (for admin)
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user || (session.user as AuthUser).role !== 'admin') { // Explicitly cast to AuthUser
+    if (!session || !session.user || (session.user as AuthUser).role !== 'admin') {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
 
   try {
     const db = await getDb();
+    // Join with users table to get user's name or email for display
     const bookingsFromDb = await db.all(`
         SELECT 
             b.id, 
             b.movieId, 
             b.movieTitle, 
             b.userId, 
-            b.userEmail, 
+            COALESCE(u.email, b.userEmail) as userDisplayEmail, -- Prefer email from users table, fallback to booking's stored email
             b.seatIds, 
             b.groupSize, 
             b.preferencesJson, 
-            b.bookingTime,
-            u.name as userName 
+            b.bookingTime
         FROM bookings b
         LEFT JOIN users u ON b.userId = u.id 
         ORDER BY b.bookingTime DESC
@@ -151,7 +152,7 @@ export async function GET(request: Request) {
             movieId: b.movieId,
             movieTitle: b.movieTitle,
             userId: b.userId, 
-            userEmail: b.userEmail || (b.userName ? `${b.userName}'s guest (legacy)` : 'Legacy Guest'),
+            userEmail: b.userDisplayEmail, // Use the coalesced email
             seatIds: seatIds,
             groupSize: b.groupSize,
             preferences: preferences,
@@ -165,4 +166,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Failed to fetch bookings', error: (error as Error).message }, { status: 500 });
   }
 }
-

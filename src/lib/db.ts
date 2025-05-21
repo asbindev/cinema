@@ -10,27 +10,30 @@ if (process.env.NODE_ENV === 'development') {
 
 let db: Database | null = null;
 
-async function seedAdminUser(database: Database) {
-  const adminEmail = 'admin@test.com';
-  const adminPassword = 'Test@123'; // This will be hashed
-
+async function seedUser(database: Database, email: string, name: string, role: 'user' | 'admin', passwordRaw: string) {
   try {
-    const existingAdmin = await database.get('SELECT id FROM users WHERE email = ? AND role = ?', adminEmail, 'admin');
-    if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const existingUser = await database.get('SELECT id FROM users WHERE email = ?', email);
+    if (!existingUser) {
+      const hashedPassword = await bcrypt.hash(passwordRaw, 10);
       await database.run(
         'INSERT INTO users (email, hashedPassword, role, name) VALUES (?, ?, ?, ?)',
-        adminEmail,
+        email,
         hashedPassword,
-        'admin',
-        'Administrator'
+        role,
+        name
       );
-      console.log(`Admin user ${adminEmail} created.`);
+      console.log(`User ${email} (role: ${role}) created.`);
     } else {
-      console.log(`Admin user ${adminEmail} already exists.`);
+      console.log(`User ${email} (role: ${existingUser.role}) already exists.`);
+      // Optionally, update role or password if needed for existing users, but be cautious
+      // For instance, ensure admin always has admin role:
+      if (email === 'admin@test.com' && existingUser.role !== 'admin') {
+        await database.run('UPDATE users SET role = ? WHERE email = ?', 'admin', email);
+        console.log(`User ${email} role updated to admin.`);
+      }
     }
   } catch (error) {
-    console.error(`Failed to seed admin user ${adminEmail}:`, error);
+    console.error(`Failed to seed user ${email}:`, error);
   }
 }
 
@@ -74,26 +77,29 @@ export async function getDb() {
           id TEXT PRIMARY KEY, -- UUID
           movieId INTEGER NOT NULL,
           movieTitle TEXT NOT NULL, -- Denormalized for easier display
-          userId INTEGER, -- Nullable for anonymous/guest bookings initially
-          userEmail TEXT, -- For guest bookings or denormalized user email
+          userId INTEGER, -- Changed to NOT NULL, as booking requires login
+          userEmail TEXT NOT NULL, -- Stored from session, for easier display
           seatIds TEXT NOT NULL, -- JSON array of seat IDs: ["A1", "B2"]
           groupSize INTEGER NOT NULL,
           preferencesJson TEXT, -- JSON string of BookingFormState
           bookingTime DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (movieId) REFERENCES movies(id),
-          FOREIGN KEY (userId) REFERENCES users(id)
+          FOREIGN KEY (movieId) REFERENCES movies(id) ON DELETE CASCADE,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
         );
       `);
       
       console.log('Database connected and tables (movies, users, bookings) ensured.');
 
-      // Seed the admin user
-      await seedAdminUser(db);
+      // Seed users
+      await seedUser(db, 'admin@test.com', 'Administrator', 'admin', 'Test@123');
+      await seedUser(db, 'user@test.com', 'Regular User', 'user', 'Test@123');
 
     } catch (error) {
       console.error('Failed to connect to the database or ensure tables:', error);
+      db = null; // Reset db instance on error
       throw error; // Re-throw the error to indicate failure
     }
   }
   return db;
 }
+

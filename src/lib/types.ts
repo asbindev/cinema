@@ -79,17 +79,17 @@ export interface User { // Represents a user in the database
 }
 
 export interface AuthUser { // Represents the authenticated user in session/token
-  id: string; 
+  id: string; // From NextAuth, usually string representation of DB ID
   name?: string | null;
   email: string;
   role: 'user' | 'admin';
 }
 
 // Booking types
+// Client sends this payload. userId and userEmail are derived from session server-side.
 export interface NewBookingPayload {
   movieId: number;
   movieTitle: string;
-  // userId and userEmail will be derived from session on the server
   seatIds: string[];
   groupSize: number;
   preferences: BookingFormState;
@@ -99,8 +99,8 @@ export interface BookingEntry { // Represents a full booking record from the DB
   id: string; // UUID from database
   movieId: number;
   movieTitle: string;
-  userId: number | null; // Stored as number in DB, can be null for old guest bookings if any
-  userEmail: string | null; // Stored in DB
+  userId: number; // Stored as number in DB, now NOT NULL
+  userEmail: string; // Stored in DB from session
   seatIds: string[]; // Parsed from JSON
   groupSize: number;
   preferences: BookingFormState; // Parsed from JSON

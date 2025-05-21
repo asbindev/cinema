@@ -102,8 +102,8 @@ export default function AdminBookingsPage() {
                       <Badge variant="secondary" className="truncate max-w-[100px]">{booking.id.substring(0,8)}...</Badge>
                     </TableCell>
                     <TableCell>{booking.movieTitle}</TableCell>
-                    <TableCell>{booking.userEmail || 'Guest'}</TableCell>
-                    <TableCell>{booking.userId === null || booking.userId === undefined ? 'N/A' : booking.userId}</TableCell>
+                    <TableCell>{booking.userEmail || 'N/A'}</TableCell>
+                    <TableCell>{booking.userId === null || booking.userId === undefined ? 'N/A' : booking.userId.toString()}</TableCell>
                     <TableCell>
                         <div className="flex flex-wrap gap-1">
                             {booking.seatIds.map(seatId => (
