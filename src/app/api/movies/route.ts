@@ -1,7 +1,9 @@
 
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import type { Movie } from '@/lib/types';
+import type { Movie, AuthUser } from '@/lib/types';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // GET /api/movies - Fetch all movies
 export async function GET() {
@@ -15,9 +17,14 @@ export async function GET() {
   }
 }
 
-// POST /api/movies - Create a new movie
+// POST /api/movies - Create a new movie (Admin only)
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || (session.user as AuthUser).role !== 'admin') {
+      return NextResponse.json({ message: 'Unauthorized. Admin access required.' }, { status: 403 });
+    }
+
     const { title, description, posterUrl, duration } = await request.json();
 
     if (!title) {

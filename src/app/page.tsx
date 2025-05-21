@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { Movie, AuthUser } from '@/lib/types';
-import { LogIn, LogOut, UserPlus, Settings, Film, TicketIcon } from 'lucide-react';
+import { LogIn, LogOut, UserPlus, Settings, Film, TicketIcon, UserCircle } from 'lucide-react'; // Added UserCircle
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
@@ -43,6 +43,7 @@ export default function HomePage() {
   }, [toast]);
 
   const authUser = session?.user as AuthUser | undefined;
+  const isAdmin = authUser?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -51,13 +52,22 @@ export default function HomePage() {
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
           {status === 'loading' ? (
             <Button variant="outline" size="sm" disabled>Loading...</Button>
-          ) : session ? (
+          ) : session && authUser ? (
             <>
-              {authUser?.role === 'admin' && (
+              <span className="text-sm flex items-center mr-2">
+                <UserCircle className="mr-1.5 h-5 w-5" /> {authUser.email}
+              </span>
+              {isAdmin && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/admin"><Settings className="mr-2 h-4 w-4" /> Admin Panel</Link>
                 </Button>
               )}
+              {/* Placeholder for My Bookings link for regular users */}
+              {/* {authUser && !isAdmin && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/my-bookings">My Bookings</Link>
+                </Button>
+              )} */}
               <Button variant="outline" size="sm" onClick={() => signOut()}>
                 <LogOut className="mr-2 h-4 w-4" /> Logout
               </Button>
@@ -107,9 +117,10 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Check back later for new movie listings. Admins can add movies in the admin panel.
+                  Check back later for new movie listings.
+                  {isAdmin && " Admins can add movies in the admin panel."}
                 </p>
-                 {authUser?.role === 'admin' && (
+                 {isAdmin && (
                     <Button asChild className="mt-4">
                         <Link href="/admin/movies">Add Movies</Link>
                     </Button>

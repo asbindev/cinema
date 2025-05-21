@@ -1,11 +1,13 @@
+
 'use client';
 
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { MovieForm } from '@/components/admin/MovieForm';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { Movie, MovieFormData } from '@/lib/types';
+import type { Movie, MovieFormData, AuthUser } from '@/lib/types';
 import {
   Card,
   CardHeader,
@@ -37,11 +39,15 @@ import Image from 'next/image';
 import { PlusCircle, Edit2, Trash2, Film } from 'lucide-react';
 
 export default function AdminMoviesPage() {
+  const { data: session } = useSession();
   const { toast } = useToast();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
+
+  const authUser = session?.user as AuthUser | undefined;
+  const isAdmin = authUser?.role === 'admin';
 
   const fetchMovies = useCallback(async () => {
     setIsLoading(true);
@@ -66,6 +72,10 @@ export default function AdminMoviesPage() {
   }, [fetchMovies]);
 
   const handleFormSubmit = async (data: MovieFormData) => {
+    if (!isAdmin) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to perform this action.' });
+      return;
+    }
     setIsLoading(true);
     const method = editingMovie ? 'PUT' : 'POST';
     const url = editingMovie
@@ -105,6 +115,10 @@ export default function AdminMoviesPage() {
   };
 
   const handleDeleteMovie = async (movieId: number) => {
+    if (!isAdmin) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to perform this action.' });
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch(`/api/movies/${movieId}`, {
@@ -112,7 +126,8 @@ export default function AdminMoviesPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete movie');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete movie');
       }
 
       toast({
@@ -150,27 +165,29 @@ export default function AdminMoviesPage() {
           Manage Movies
         </h1>
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddMovieForm}>
-              <PlusCircle className="mr-2 h-5 w-5" /> Add New Movie
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
-            <DialogHeader>
-              <DialogTitle>{editingMovie ? 'Edit Movie' : 'Add New Movie'}</DialogTitle>
-              <DialogDescription>
-                {editingMovie ? 'Update the details of this movie.' : 'Fill in the details for the new movie.'}
-              </DialogDescription>
-            </DialogHeader>
-            <MovieForm
-              onSubmit={handleFormSubmit}
-              isLoading={isLoading}
-              defaultValues={editingMovie || undefined}
-              submitButtonText={editingMovie ? 'Save Changes' : 'Add Movie'}
-            />
-          </DialogContent>
-        </Dialog>
+        {isAdmin && (
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddMovieForm}>
+                <PlusCircle className="mr-2 h-5 w-5" /> Add New Movie
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>{editingMovie ? 'Edit Movie' : 'Add New Movie'}</DialogTitle>
+                <DialogDescription>
+                  {editingMovie ? 'Update the details of this movie.' : 'Fill in the details for the new movie.'}
+                </DialogDescription>
+              </DialogHeader>
+              <MovieForm
+                onSubmit={handleFormSubmit}
+                isLoading={isLoading}
+                defaultValues={editingMovie || undefined}
+                submitButtonText={editingMovie ? 'Save Changes' : 'Add Movie'}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading && movies.length === 0 && <p>Loading movies...</p>}
@@ -180,10 +197,14 @@ export default function AdminMoviesPage() {
             <CardTitle>No Movies Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">Get started by adding your first movie.</p>
-            <Button onClick={openAddMovieForm}>
-              <PlusCircle className="mr-2 h-5 w-5" /> Add New Movie
-            </Button>
+            <p className="text-muted-foreground mb-4">
+              {isAdmin ? "Get started by adding your first movie." : "No movies are currently listed."}
+            </p>
+            {isAdmin && (
+              <Button onClick={openAddMovieForm}>
+                <PlusCircle className="mr-2 h-5 w-5" /> Add New Movie
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -199,6 +220,7 @@ export default function AdminMoviesPage() {
                     alt={movie.title}
                     layout="fill"
                     objectFit="cover"
+                    data-ai-hint="movie poster"
                   />
                 </div>
               ) : (
@@ -218,40 +240,42 @@ export default function AdminMoviesPage() {
               </p>
             </CardContent>
 
-            <CardFooter className="flex justify-end space-x-2 border-t pt-4 mt-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openEditMovieForm(movie)}
-              >
-                <Edit2 className="mr-1 h-4 w-4" /> Edit
-              </Button>
+            {isAdmin && (
+              <CardFooter className="flex justify-end space-x-2 border-t pt-4 mt-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditMovieForm(movie)}
+                >
+                  <Edit2 className="mr-1 h-4 w-4" /> Edit
+                </Button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-1 h-4 w-4" /> Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the
-                      movie "{movie.title}".
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleDeleteMovie(movie.id)}
-                    >
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardFooter>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="mr-1 h-4 w-4" /> Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the
+                        movie "{movie.title}".
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteMovie(movie.id)}
+                      >
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardFooter>
+            )}
           </Card>
         ))}
       </div>

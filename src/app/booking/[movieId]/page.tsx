@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import type { Movie, AuthUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogIn, LogOut, UserPlus, Settings, ArrowLeft, Ticket } from 'lucide-react';
+import { LogIn, LogOut, UserPlus, Settings, ArrowLeft, Ticket, UserCircle } from 'lucide-react'; // Added UserCircle
 
 export default function MovieBookingPage() {
   const params = useParams();
@@ -58,27 +58,37 @@ export default function MovieBookingPage() {
   }, [movieId, toast, router]);
 
   const authUser = session?.user as AuthUser | undefined;
+  const isAdmin = authUser?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <header className="mb-8 flex flex-col sm:flex-row justify-between items-center">
         <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()} className="mr-2">
+            <Button variant="outline" size="icon" onClick={() => router.push('/')} className="mr-2">
                 <ArrowLeft className="h-5 w-5" />
-                <span className="sr-only">Back</span>
+                <span className="sr-only">Back to Home</span>
             </Button>
             <CineSeatProLogo />
         </div>
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
           {status === 'loading' ? (
             <Button variant="outline" size="sm" disabled>Loading...</Button>
-          ) : session ? (
+          ) : session && authUser ? (
             <>
-              {authUser?.role === 'admin' && (
+              <span className="text-sm flex items-center mr-2">
+                <UserCircle className="mr-1.5 h-5 w-5" /> {authUser.email}
+              </span>
+              {isAdmin && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/admin"><Settings className="mr-2 h-4 w-4" /> Admin Panel</Link>
                 </Button>
               )}
+               {/* Placeholder for My Bookings link for regular users */}
+              {/* {authUser && !isAdmin && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/my-bookings">My Bookings</Link>
+                </Button>
+              )} */}
               <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
                 <LogOut className="mr-2 h-4 w-4" /> Logout
               </Button>
