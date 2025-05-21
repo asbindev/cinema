@@ -21,17 +21,18 @@ export const authOptions: NextAuthOptions = {
           }
 
           const db = await getDb();
-          const user = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
+          const userFromDb = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
 
-          if (user && user.hashedPassword) {
-            const passwordsMatch = await bcrypt.compare(credentials.password, user.hashedPassword);
+          if (userFromDb && userFromDb.hashedPassword) {
+            const passwordsMatch = await bcrypt.compare(credentials.password, userFromDb.hashedPassword);
             if (passwordsMatch) {
-              console.log(`Authorize: Authentication successful for ${user.email}`);
+              console.log(`Authorize: Authentication successful for ${userFromDb.email}`);
+              // Ensure the returned object matches what JWT and session callbacks expect
               return {
-                id: user.id.toString(),
-                name: user.name,
-                email: user.email,
-                role: user.role,
+                id: userFromDb.id.toString(),
+                name: userFromDb.name,
+                email: userFromDb.email,
+                role: userFromDb.role, // This role comes from the database
               };
             } else {
               console.warn(`Authorize: Password mismatch for ${credentials.email}`);
@@ -42,9 +43,7 @@ export const authOptions: NextAuthOptions = {
           return null; // Login failed
         } catch (error) {
           console.error("Authorize error during authentication process:", error);
-          // Return null to indicate login failure to NextAuth, 
-          // rather than letting an unhandled exception crash the server process.
-          return null; 
+          return null;
         }
       }
     })
@@ -54,11 +53,13 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      // The 'user' object here is the one returned by the 'authorize' callback
       if (user) {
-        token.id = user.id;
-        token.role =  'admin'; // user comes from authorize which has role
-        token.name = user.name;
-        token.email = user.email;
+        const authUser = user as AuthUser; // Cast to our specific AuthUser type
+        token.id = authUser.id;
+        token.role = authUser.role; // Use the role from the user object
+        token.name = authUser.name;
+        token.email = authUser.email;
       }
       return token;
     },
