@@ -12,7 +12,7 @@ let db: Database | null = null;
 
 async function seedUser(database: Database, email: string, name: string, role: 'user' | 'admin', passwordRaw: string) {
   try {
-    const existingUser = await database.get('SELECT id FROM users WHERE email = ?', email);
+    const existingUser = await database.get('SELECT id, role FROM users WHERE email = ?', email); // Fetch role as well
     if (!existingUser) {
       const hashedPassword = await bcrypt.hash(passwordRaw, 10);
       await database.run(
@@ -27,7 +27,7 @@ async function seedUser(database: Database, email: string, name: string, role: '
       console.log(`User ${email} (role: ${existingUser.role}) already exists.`);
       // Optionally, update role or password if needed for existing users, but be cautious
       // For instance, ensure admin always has admin role:
-      if (email === 'admin@test.com' && existingUser.role !== 'admin') {
+      if (email === 'admin@gmail.com' && existingUser.role !== 'admin') {
         await database.run('UPDATE users SET role = ? WHERE email = ?', 'admin', email);
         console.log(`User ${email} role updated to admin.`);
       }
@@ -77,7 +77,7 @@ export async function getDb() {
           id TEXT PRIMARY KEY, -- UUID
           movieId INTEGER NOT NULL,
           movieTitle TEXT NOT NULL, -- Denormalized for easier display
-          userId INTEGER, -- Changed to NOT NULL, as booking requires login
+          userId INTEGER NOT NULL, 
           userEmail TEXT NOT NULL, -- Stored from session, for easier display
           seatIds TEXT NOT NULL, -- JSON array of seat IDs: ["A1", "B2"]
           groupSize INTEGER NOT NULL,
@@ -91,8 +91,8 @@ export async function getDb() {
       console.log('Database connected and tables (movies, users, bookings) ensured.');
 
       // Seed users
-      await seedUser(db, 'admin@test.com', 'Administrator', 'admin', 'Test@123');
-      await seedUser(db, 'user@test.com', 'Regular User', 'user', 'Test@123');
+      await seedUser(db, 'admin@gmail.com', 'Administrator', 'admin', 'Test@123');
+      await seedUser(db, 'user@gmail.com', 'Regular User', 'user', 'Test@123');
 
     } catch (error) {
       console.error('Failed to connect to the database or ensure tables:', error);
