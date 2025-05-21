@@ -3,6 +3,7 @@
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { SeatingChart } from '@/components/SeatingChart';
 import { BookingForm } from '@/components/BookingForm';
 import { AdminControls } from '@/components/AdminControls';
@@ -13,7 +14,7 @@ import { generateInitialSeats, defaultSeatLayoutConfig } from '@/lib/seat-utils'
 import type { Seat, BookingFormState, CurrentBooking, SeatLayoutConfig, AuthUser, Movie, NewBookingPayload } from '@/lib/types';
 import { handleSeatAllocation } from '@/lib/actions';
 import { Separator } from '@/components/ui/separator';
-import { RefreshCw, CheckSquare, XSquare, AlertTriangle } from 'lucide-react';
+import { RefreshCw, CheckSquare, XSquare, AlertTriangle, LogIn } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 
 
@@ -27,7 +28,7 @@ interface SelectionValidationResult {
 }
 
 export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { toast } = useToast();
   const [seatLayoutConfig] = useState<SeatLayoutConfig>(defaultSeatLayoutConfig);
   const [seats, setSeats] = useState<Seat[]>([]);
@@ -40,6 +41,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   const [selectionValidation, setSelectionValidation] = useState<SelectionValidationResult>({ isValid: false, message: '' });
 
   const authUser = session?.user as AuthUser | undefined;
+  const isAuthenticated = sessionStatus === 'authenticated' && !!authUser;
 
   const initializeSeats = useCallback(() => {
     const initialSeats = generateInitialSeats(seatLayoutConfig);
@@ -136,7 +138,10 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
             ? prevSelected.filter(id => id !== seatId)
             : [...prevSelected, seatId]
         );
-    } else {
+    } else if (!isAuthenticated) {
+        toast({ title: "Login Required", description: "Please log in to select seats."});
+    }
+     else {
         toast({ title: "Info", description: "Use the booking form to find seats or enable admin mode for manual selection."});
     }
   };
@@ -153,6 +158,10 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       toast({ variant: "destructive", title: "Booking Error", description: "No seats selected for booking." });
       return null;
     }
+     if (!isAuthenticated) {
+      toast({ variant: "destructive", title: "Login Required", description: "You must be logged in to make a booking." });
+      return null;
+    }
 
     const payload: NewBookingPayload = {
       movieId: movie.id,
@@ -160,8 +169,6 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       seatIds: allocatedSeatIds,
       groupSize: bookingDetails.groupSize,
       preferences: bookingDetails,
-      userEmail: authUser?.email,
-      userId: authUser?.id ? parseInt(authUser.id, 10) : undefined, // Ensure userId is number
     };
 
     setIsLoading(true);
@@ -173,7 +180,12 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save booking to database');
+        if (response.status === 401 || response.status === 403) {
+             toast({ variant: "destructive", title: "Authentication Error", description: errorData.message || "Please log in to book seats."});
+        } else {
+            throw new Error(errorData.message || 'Failed to save booking to database');
+        }
+        return null;
       }
       const savedBooking = await response.json();
       return savedBooking.id; 
@@ -186,6 +198,10 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   };
 
   const processAiBookingRequest = async (bookingDetails: BookingFormState) => {
+    if (!isAuthenticated) {
+      toast({ variant: "destructive", title: "Login Required", description: "Please log in to find seats." });
+      return;
+    }
     if (currentBooking) {
       toast({ variant: "destructive", title: "Existing Booking", description: "Please cancel the current confirmed booking before making a new one." });
       return;
@@ -212,6 +228,10 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   };
 
   const handleConfirmFinalBooking = async () => {
+    if (!isAuthenticated) {
+      toast({ variant: "destructive", title: "Login Required", description: "Please log in to confirm your booking." });
+      return;
+    }
     if (!pendingBookingDetails || userSelectedSeatIds.length === 0) {
         toast({ variant: "destructive", title: "Confirmation Error", description: "No pending booking or seats selected to confirm." });
         return;
@@ -251,6 +271,10 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   };
   
   const handleAdminBookingConfirm = async () => {
+    if (!isAuthenticated && authUser?.role !== 'admin') { // Allow admin even if session is briefly loading
+      toast({ variant: "destructive", title: "Admin Login Required", description: "Only admins can perform this action." });
+      return;
+    }
     if (!isLocalAdminMode || userSelectedSeatIds.length === 0) return;
 
     const adminBookingDetails: BookingFormState = { 
@@ -336,7 +360,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
             config={seatLayoutConfig}
             onSeatClick={handleSeatClick}
             selectedSeatIds={userSelectedSeatIds}
-            disabled={isLoading || (!!currentBooking && !isLocalAdminMode)} 
+            disabled={isLoading || (!!currentBooking && !isLocalAdminMode) || (!isAuthenticated && !isLocalAdminMode)} 
             />
         ) : (
         <p>Loading seating chart...</p>
@@ -349,7 +373,23 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
         )}
         <Separator />
 
-        {!isReviewingAiSuggestion && !currentBooking && !isLocalAdminMode && (
+        {!isAuthenticated && !isLocalAdminMode && !currentBooking && !pendingBookingDetails && (
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center"><LogIn className="mr-2 h-5 w-5" />Login Required</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">Please log in to view seat availability and make a booking.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button asChild className="w-full">
+                        <Link href={`/login?callbackUrl=/booking/${movie?.id}`}>Login to Book</Link>
+                    </Button>
+                </CardFooter>
+            </Card>
+        )}
+
+        {isAuthenticated && !isReviewingAiSuggestion && !currentBooking && !isLocalAdminMode && (
           <BookingForm onSubmit={processAiBookingRequest} isLoading={isLoading} defaultValues={pendingBookingDetails || undefined} />
         )}
 
@@ -378,7 +418,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
                     <Button 
                         onClick={handleConfirmFinalBooking} 
                         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" 
-                        disabled={isLoading || !selectionValidation.isValid}
+                        disabled={isLoading || !selectionValidation.isValid || !isAuthenticated}
                     >
                         <CheckSquare className="mr-2 h-4 w-4" /> Confirm Booking
                     </Button>
@@ -398,7 +438,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
                     </CardDescription>
                 </CardHeader>
                 <CardFooter>
-                    <Button onClick={handleAdminBookingConfirm} className="w-full" disabled={isLoading || userSelectedSeatIds.length === 0}>
+                    <Button onClick={handleAdminBookingConfirm} className="w-full" disabled={isLoading || userSelectedSeatIds.length === 0 || (!isAuthenticated && authUser?.role !== 'admin')}>
                         <CheckSquare className="mr-2 h-4 w-4" /> Confirm Admin Booking
                     </Button>
                 </CardFooter>

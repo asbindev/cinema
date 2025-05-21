@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import type { NewBookingPayload, BookingEntry } from '@/lib/types';
+import type { NewBookingPayload, BookingEntry, AuthUser } from '@/lib/types';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -9,18 +9,24 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const body = await request.json() as NewBookingPayload;
+
+    if (!session || !session.user) {
+      return NextResponse.json({ message: 'Unauthorized. Please log in to make a booking.' }, { status: 401 });
+    }
+    const authUser = session.user as AuthUser;
+    if (!authUser.id || !authUser.email) {
+        return NextResponse.json({ message: 'User session is invalid or incomplete.' }, { status: 400 });
+    }
+
+    const body = await request.json() as Omit<NewBookingPayload, 'userId' | 'userEmail'>; // userId and userEmail removed from client payload
 
     const { 
       movieId, 
       movieTitle, 
-      seatIds: requestedSeatIds, // Renamed for clarity
+      seatIds: requestedSeatIds,
       groupSize, 
       preferences 
     } = body;
-
-    let userEmailFromBody = body.userEmail;
-    let userIdFromBody = body.userId; // This is expected to be number?
 
     if (!movieId || !movieTitle || !requestedSeatIds || requestedSeatIds.length === 0 || !groupSize) {
       return NextResponse.json({ message: 'Missing required booking information' }, { status: 400 });
@@ -46,21 +52,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Determine userId and userEmail for storage
-    let finalUserId: number | null = null;
-    let finalUserEmail: string | null = userEmailFromBody || null;
-
-    if (session?.user) {
-      finalUserEmail = session.user.email || finalUserEmail; // Prefer session email
-      if (session.user.id) {
-        const parsedSessionUserId = parseInt(session.user.id, 10);
-        if (!isNaN(parsedSessionUserId)) {
-          finalUserId = parsedSessionUserId;
-        }
-      }
-    } else if (userIdFromBody !== undefined) {
-      finalUserId = userIdFromBody; // Already a number from NewBookingPayload
+    const finalUserId = parseInt(authUser.id, 10);
+    if (isNaN(finalUserId)) {
+        // This should ideally not happen if session.user.id is always a string convertible to number
+        console.error("Failed to parse session user ID:", authUser.id);
+        return NextResponse.json({ message: 'Invalid user ID in session.' }, { status: 500 });
     }
+    const finalUserEmail = authUser.email;
 
 
     const bookingId = crypto.randomUUID();
@@ -79,15 +77,12 @@ export async function POST(request: Request) {
       bookingTime
     );
     
-    // Check if insert was successful for UUIDs (lastID might not be set, check changes)
     if (result.changes === 0) {
-        // Attempt to verify if the row was inserted, as 'lastID' is not reliable for TEXT primary keys.
         const check = await db.get('SELECT id FROM bookings WHERE id = ?', bookingId);
         if (!check) {
            throw new Error('Failed to insert booking, verification query failed.');
         }
     }
-
 
     const newBooking: BookingEntry = {
       id: bookingId,
@@ -112,7 +107,7 @@ export async function POST(request: Request) {
 // GET /api/bookings - Fetch all bookings (for admin)
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !session.user || (session.user as AuthUser).role !== 'admin') { // Explicitly cast to AuthUser
         return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
 
@@ -141,22 +136,22 @@ export async function GET(request: Request) {
             preferences = JSON.parse(b.preferencesJson);
         } catch (e) {
             console.error("Failed to parse preferencesJson from DB:", b.preferencesJson, e);
-            preferences = {}; // Default to empty object on error
+            preferences = {}; 
         }
         let seatIds;
         try {
             seatIds = JSON.parse(b.seatIds);
         } catch (e) {
             console.error("Failed to parse seatIds from DB:", b.seatIds, e);
-            seatIds = []; // Default to empty array on error
+            seatIds = []; 
         }
 
         return {
             id: b.id,
             movieId: b.movieId,
             movieTitle: b.movieTitle,
-            userId: b.userId, // This will be number or null from DB
-            userEmail: b.userEmail || (b.userName ? `${b.userName}'s guest` : 'Guest'),
+            userId: b.userId, 
+            userEmail: b.userEmail || (b.userName ? `${b.userName}'s guest (legacy)` : 'Legacy Guest'),
             seatIds: seatIds,
             groupSize: b.groupSize,
             preferences: preferences,
@@ -170,3 +165,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Failed to fetch bookings', error: (error as Error).message }, { status: 500 });
   }
 }
+

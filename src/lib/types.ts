@@ -89,17 +89,21 @@ export interface AuthUser { // Represents the authenticated user in session/toke
 export interface NewBookingPayload {
   movieId: number;
   movieTitle: string;
-  userId?: number; // Changed from string? to number? to match DB INTEGER type for FK
-  userEmail?: string;
+  // userId and userEmail will be derived from session on the server
   seatIds: string[];
   groupSize: number;
   preferences: BookingFormState;
 }
 
-export interface BookingEntry extends Omit<NewBookingPayload, 'userId' | 'preferences'> {
+export interface BookingEntry { // Represents a full booking record from the DB
   id: string; // UUID from database
+  movieId: number;
+  movieTitle: string;
+  userId: number | null; // Stored as number in DB, can be null for old guest bookings if any
+  userEmail: string | null; // Stored in DB
+  seatIds: string[]; // Parsed from JSON
+  groupSize: number;
+  preferences: BookingFormState; // Parsed from JSON
   bookingTime: string; // ISO date string
-  userId?: number; // Changed from string? to number?
-  userEmail?: string; // Retain this as it was
-  preferences: BookingFormState; // Retain this as it was
 }
+
