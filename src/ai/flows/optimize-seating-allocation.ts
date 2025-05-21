@@ -66,12 +66,13 @@ You will receive a list of available seats, the size of the group needing seats,
 
 Based on this information, you will determine the best possible seat allocation for the group, taking into account the following constraints:
 
-*   Groups should be seated together whenever possible.
-*   Unavailable or broken seats should not be allocated.
-*   If accessibility is required, seats must be 'accessible' type.
-*   If VIP seating is preferred, allocate 'vip' type seats if available and suitable.
-*   If senior citizen preference is indicated, prioritize 'senior' type seats if available, or otherwise comfortable and suitable regular seats. Senior citizens can override age restrictions if they choose to sit in an age-restricted zone, but this should not be the default unless no other suitable option for the group is available.
-*   Adhere to age restrictions for non-senior members - no children in age-restricted zones unless accompanied by an adult who meets the age criteria and it's part of the group.
+*   Groups (2-7 people) must be seated together whenever possible. Avoid splitting groups. If a group cannot be seated together perfectly, explain why in the message.
+*   If the group size is 1 (solo attendee), try to place them in a suitable seat that is not directly between two existing distinct booked groups, unless it's a VIP/Accessible seat, a designated senior seat chosen by a senior, or the only option available. Prioritize aisle seats or seats next to other solo attendees or empty seats if possible for solo attendees.
+*   Unavailable or broken seats must not be allocated.
+*   If 'requiresAccessibleSeating' is true, all allocated seats must be of 'accessible' type.
+*   If 'wantsVipSeating' is true, prioritize 'vip' type seats if available and suitable for the group.
+*   Age Restrictions: For seats in age-restricted zones, if the group contains members younger than the seat's specified 'ageRestriction', those members *cannot* be allocated to that seat. The only exception is if a 'seniorCitizen' in the group explicitly chooses to sit in that age-restricted zone (as part of their group's seating); in this case, their presence allows the younger members of their specific group to also sit there. An adult non-senior member accompanying a child does *not* override the age restriction for that child in an age-restricted zone if the seat is age-restricted for that child.
+*   Senior Citizens: If 'seniorCitizen' is true for a member or the group, prioritize 'senior' type seats if available. If not, allocate them to comfortable and suitable 'regular' seats. Senior citizens can choose to sit in an age-restricted zone (even with younger members in their group, as per the age restriction rule above), but this should not be the default unless no other suitable option for the group is available or if they specifically indicate this preference (which is implied by the AI finding such a suitable spot if other options are poor).
 
 Return the seat numbers of the allocated seats, and a message indicating whether the allocation was successful and why.
 
