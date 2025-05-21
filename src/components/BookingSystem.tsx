@@ -82,16 +82,12 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
     if (details.ageOfYoungestMember !== undefined && !details.seniorCitizen) {
       const ageRequirementMet = selectedIds.every(id => {
         const seat = allSeats.find(s => s.id === id);
-        // Allow if seat has no restriction, or if restriction is met by youngest member
         return !seat?.ageRestriction || seat.ageRestriction <= details.ageOfYoungestMember!;
       });
       if (!ageRequirementMet) {
         return { isValid: false, message: `Selected seats do not meet the age requirement (${details.ageOfYoungestMember}+).` };
       }
     }
-    // Add more checks here for VIP preference if strict, or other complex rules as needed.
-    // For now, VIP is a preference, so not strictly enforced on manual adjustment.
-
     return { isValid: true, message: "Selection is valid." };
   }, []);
 
@@ -101,7 +97,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       const validation = getSelectionValidation(userSelectedSeatIds, pendingBookingDetails, seats);
       setSelectionValidation(validation);
     } else {
-      setSelectionValidation({ isValid: false, message: '' }); // Reset if not in pending state
+      setSelectionValidation({ isValid: false, message: '' }); 
     }
   }, [userSelectedSeatIds, pendingBookingDetails, seats, getSelectionValidation]);
 
@@ -117,7 +113,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       return;
     }
 
-    if (pendingBookingDetails) { // User is modifying AI suggestions
+    if (pendingBookingDetails) { 
       setUserSelectedSeatIds(prevSelected => {
         const isCurrentlySelected = prevSelected.includes(seatId);
         if (isCurrentlySelected) {
@@ -134,7 +130,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
           return [...prevSelected, seatId];
         }
       });
-    } else if (isLocalAdminMode && !currentBooking) { // Admin is manually selecting
+    } else if (isLocalAdminMode && !currentBooking) { 
         setUserSelectedSeatIds(prevSelected =>
         prevSelected.includes(seatId)
             ? prevSelected.filter(id => id !== seatId)
@@ -165,7 +161,7 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
       groupSize: bookingDetails.groupSize,
       preferences: bookingDetails,
       userEmail: authUser?.email,
-      userId: authUser?.id
+      userId: authUser?.id ? parseInt(authUser.id, 10) : undefined, // Ensure userId is number
     };
 
     setIsLoading(true);
@@ -257,12 +253,11 @@ export const BookingSystem: React.FC<BookingSystemProps> = ({ movie }) => {
   const handleAdminBookingConfirm = async () => {
     if (!isLocalAdminMode || userSelectedSeatIds.length === 0) return;
 
-    const adminBookingDetails: BookingFormState = { // Admin bookings have simpler "details"
+    const adminBookingDetails: BookingFormState = { 
         groupSize: userSelectedSeatIds.length,
         requiresAccessibleSeating: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'accessible'),
         wantsVipSeating: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'vip'),
         seniorCitizen: userSelectedSeatIds.some(id => seats.find(s => s.id === id)?.category === 'senior'),
-        // No age restriction check for admin direct booking
     };
     
     const dbBookingId = await saveBookingToDb(userSelectedSeatIds, adminBookingDetails);

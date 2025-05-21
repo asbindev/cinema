@@ -89,14 +89,17 @@ export interface AuthUser { // Represents the authenticated user in session/toke
 export interface NewBookingPayload {
   movieId: number;
   movieTitle: string;
-  userId?: string; // from AuthUser.id, which is string
+  userId?: number; // Changed from string? to number? to match DB INTEGER type for FK
   userEmail?: string;
   seatIds: string[];
   groupSize: number;
   preferences: BookingFormState;
 }
 
-export interface BookingEntry extends NewBookingPayload {
+export interface BookingEntry extends Omit<NewBookingPayload, 'userId' | 'preferences'> {
   id: string; // UUID from database
   bookingTime: string; // ISO date string
+  userId?: number; // Changed from string? to number?
+  userEmail?: string; // Retain this as it was
+  preferences: BookingFormState; // Retain this as it was
 }

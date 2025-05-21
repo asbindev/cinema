@@ -14,25 +14,55 @@ export async function POST(request: Request) {
     const { 
       movieId, 
       movieTitle, 
-      seatIds, 
+      seatIds: requestedSeatIds, // Renamed for clarity
       groupSize, 
       preferences 
     } = body;
 
-    let userEmail = body.userEmail;
-    let userId = body.userId;
+    let userEmailFromBody = body.userEmail;
+    let userIdFromBody = body.userId; // This is expected to be number?
 
-    if (session?.user) {
-        userEmail = session.user.email || userEmail; // Prefer session email
-        userId = session.user.id || userId; // Prefer session user ID
-    }
-
-
-    if (!movieId || !movieTitle || !seatIds || seatIds.length === 0 || !groupSize) {
+    if (!movieId || !movieTitle || !requestedSeatIds || requestedSeatIds.length === 0 || !groupSize) {
       return NextResponse.json({ message: 'Missing required booking information' }, { status: 400 });
     }
 
     const db = await getDb();
+
+    // Server-side check for seat availability for this movie
+    const existingBookingsForMovie = await db.all('SELECT seatIds FROM bookings WHERE movieId = ?', movieId);
+    const allBookedSeatIdsForMovie = new Set<string>();
+    existingBookingsForMovie.forEach(booking => {
+      try {
+        const bookedSeatsInDb: string[] = JSON.parse(booking.seatIds);
+        bookedSeatsInDb.forEach(seatId => allBookedSeatIdsForMovie.add(seatId));
+      } catch (e) {
+        console.error("Failed to parse seatIds from DB booking:", booking.seatIds, e);
+      }
+    });
+
+    for (const requestedSeatId of requestedSeatIds) {
+      if (allBookedSeatIdsForMovie.has(requestedSeatId)) {
+        return NextResponse.json({ message: `Seat ${requestedSeatId} is already booked for this movie. Please refresh and try again.` }, { status: 409 }); // 409 Conflict
+      }
+    }
+
+    // Determine userId and userEmail for storage
+    let finalUserId: number | null = null;
+    let finalUserEmail: string | null = userEmailFromBody || null;
+
+    if (session?.user) {
+      finalUserEmail = session.user.email || finalUserEmail; // Prefer session email
+      if (session.user.id) {
+        const parsedSessionUserId = parseInt(session.user.id, 10);
+        if (!isNaN(parsedSessionUserId)) {
+          finalUserId = parsedSessionUserId;
+        }
+      }
+    } else if (userIdFromBody !== undefined) {
+      finalUserId = userIdFromBody; // Already a number from NewBookingPayload
+    }
+
+
     const bookingId = crypto.randomUUID();
     const bookingTime = new Date().toISOString();
 
@@ -41,29 +71,31 @@ export async function POST(request: Request) {
       bookingId,
       movieId,
       movieTitle,
-      userId || null, // userId is string from AuthUser
-      userEmail || null,
-      JSON.stringify(seatIds),
+      finalUserId, 
+      finalUserEmail,
+      JSON.stringify(requestedSeatIds),
       groupSize,
       JSON.stringify(preferences),
       bookingTime
     );
-
-    if (!result.lastID && result.changes === 0) { // For INSERT, lastID might not be relevant for UUIDs, check changes
-        // Sqlite specific: for text PKs, lastID is not set. Check changes.
+    
+    // Check if insert was successful for UUIDs (lastID might not be set, check changes)
+    if (result.changes === 0) {
+        // Attempt to verify if the row was inserted, as 'lastID' is not reliable for TEXT primary keys.
         const check = await db.get('SELECT id FROM bookings WHERE id = ?', bookingId);
         if (!check) {
            throw new Error('Failed to insert booking, verification query failed.');
         }
     }
 
+
     const newBooking: BookingEntry = {
       id: bookingId,
       movieId,
       movieTitle,
-      userId,
-      userEmail,
-      seatIds,
+      userId: finalUserId,
+      userEmail: finalUserEmail,
+      seatIds: requestedSeatIds,
       groupSize,
       preferences,
       bookingTime,
@@ -80,7 +112,6 @@ export async function POST(request: Request) {
 // GET /api/bookings - Fetch all bookings (for admin)
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
-    // Basic protection: ensure user is admin (can be enhanced)
     if (!session || session.user?.role !== 'admin') {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
@@ -104,17 +135,34 @@ export async function GET(request: Request) {
         ORDER BY b.bookingTime DESC
     `);
     
-    const bookings: BookingEntry[] = bookingsFromDb.map(b => ({
-        id: b.id,
-        movieId: b.movieId,
-        movieTitle: b.movieTitle,
-        userId: b.userId,
-        userEmail: b.userEmail || (b.userName ? `${b.userName}'s guest` : 'Guest'), // Fallback for display
-        seatIds: JSON.parse(b.seatIds),
-        groupSize: b.groupSize,
-        preferences: JSON.parse(b.preferencesJson),
-        bookingTime: b.bookingTime,
-    }));
+    const bookings: BookingEntry[] = bookingsFromDb.map(b => {
+        let preferences;
+        try {
+            preferences = JSON.parse(b.preferencesJson);
+        } catch (e) {
+            console.error("Failed to parse preferencesJson from DB:", b.preferencesJson, e);
+            preferences = {}; // Default to empty object on error
+        }
+        let seatIds;
+        try {
+            seatIds = JSON.parse(b.seatIds);
+        } catch (e) {
+            console.error("Failed to parse seatIds from DB:", b.seatIds, e);
+            seatIds = []; // Default to empty array on error
+        }
+
+        return {
+            id: b.id,
+            movieId: b.movieId,
+            movieTitle: b.movieTitle,
+            userId: b.userId, // This will be number or null from DB
+            userEmail: b.userEmail || (b.userName ? `${b.userName}'s guest` : 'Guest'),
+            seatIds: seatIds,
+            groupSize: b.groupSize,
+            preferences: preferences,
+            bookingTime: b.bookingTime,
+        };
+    });
 
     return NextResponse.json(bookings);
   } catch (error) {

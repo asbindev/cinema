@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Ticket, CalendarDays, Users, Film, UserCircle } from 'lucide-react';
+import { Ticket, CalendarDays, Users, Film, UserCircle, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -88,7 +88,8 @@ export default function AdminBookingsPage() {
                 <TableRow>
                   <TableHead>Booking ID</TableHead>
                   <TableHead><Film className="inline-block mr-1 h-4 w-4" /> Movie Title</TableHead>
-                  <TableHead><UserCircle className="inline-block mr-1 h-4 w-4" /> User</TableHead>
+                  <TableHead><UserCircle className="inline-block mr-1 h-4 w-4" /> User Email</TableHead>
+                  <TableHead><Hash className="inline-block mr-1 h-4 w-4" /> User ID</TableHead>
                   <TableHead><Users className="inline-block mr-1 h-4 w-4" /> Seats</TableHead>
                   <TableHead>Group Size</TableHead>
                   <TableHead><CalendarDays className="inline-block mr-1 h-4 w-4" /> Booking Time</TableHead>
@@ -102,6 +103,7 @@ export default function AdminBookingsPage() {
                     </TableCell>
                     <TableCell>{booking.movieTitle}</TableCell>
                     <TableCell>{booking.userEmail || 'Guest'}</TableCell>
+                    <TableCell>{booking.userId === null || booking.userId === undefined ? 'N/A' : booking.userId}</TableCell>
                     <TableCell>
                         <div className="flex flex-wrap gap-1">
                             {booking.seatIds.map(seatId => (
@@ -123,4 +125,3 @@ export default function AdminBookingsPage() {
     </div>
   );
 }
-
