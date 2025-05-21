@@ -22,10 +22,17 @@ export const authOptions: NextAuthOptions = {
           }
 
           const db = await getDb();
+          console.log("Authorize: Database connection obtained.");
+
           const userFromDb = await db.get<DbUser>('SELECT * FROM users WHERE email = ?', credentials.email);
+          console.log("Authorize: User from DB:", userFromDb ? { id: userFromDb.id, email: userFromDb.email, role: userFromDb.role } : "Not found");
+
 
           if (userFromDb && userFromDb.hashedPassword) {
+            console.log("Authorize: User found, comparing password...");
             const passwordsMatch = await bcrypt.compare(credentials.password, userFromDb.hashedPassword);
+            console.log("Authorize: Passwords match:", passwordsMatch);
+
             if (passwordsMatch) {
               console.log(`Authorize: Authentication successful for ${userFromDb.email}, role: ${userFromDb.role}`);
               // Ensure the returned object matches what JWT and session callbacks expect
@@ -41,10 +48,11 @@ export const authOptions: NextAuthOptions = {
           } else {
             console.warn(`Authorize: User ${credentials.email} not found or has no password.`);
           }
+          console.log(`Authorize: Authentication failed for ${credentials.email}. Returning null.`);
           return null; // Login failed
         } catch (error) {
-          console.error("Authorize error during authentication process:", error);
-          return null; // Crucial to return null on error
+          console.error("Authorize: CRITICAL ERROR during authentication process:", error);
+          return null; // Crucial to return null on error to prevent NextAuth from crashing
         }
       }
     })
