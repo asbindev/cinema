@@ -68,7 +68,24 @@ export async function getDb() {
         );
       `);
       
-      console.log('Database connected and tables ensured.');
+      // Ensure the bookings table exists
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS bookings (
+          id TEXT PRIMARY KEY, -- UUID
+          movieId INTEGER NOT NULL,
+          movieTitle TEXT NOT NULL, -- Denormalized for easier display
+          userId INTEGER, -- Nullable for anonymous/guest bookings initially
+          userEmail TEXT, -- For guest bookings or denormalized user email
+          seatIds TEXT NOT NULL, -- JSON array of seat IDs: ["A1", "B2"]
+          groupSize INTEGER NOT NULL,
+          preferencesJson TEXT, -- JSON string of BookingFormState
+          bookingTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (movieId) REFERENCES movies(id),
+          FOREIGN KEY (userId) REFERENCES users(id)
+        );
+      `);
+      
+      console.log('Database connected and tables (movies, users, bookings) ensured.');
 
       // Seed the admin user
       await seedAdminUser(db);
@@ -80,4 +97,3 @@ export async function getDb() {
   }
   return db;
 }
-

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import type { Movie, AuthUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogIn, LogOut, UserPlus, Settings, ArrowLeft } from 'lucide-react';
+import { LogIn, LogOut, UserPlus, Settings, ArrowLeft, Ticket } from 'lucide-react';
 
 export default function MovieBookingPage() {
   const params = useParams();
@@ -35,7 +35,7 @@ export default function MovieBookingPage() {
               title: 'Movie not found',
               description: 'The movie you are looking for does not exist.',
             });
-            router.push('/'); // Redirect to homepage if movie not found
+            router.push('/'); 
             return;
           }
           if (!response.ok) {
@@ -86,10 +86,10 @@ export default function MovieBookingPage() {
           ) : (
             <>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/login"><LogIn className="mr-2 h-4 w-4" /> Login</Link>
+                <Link href={`/login?callbackUrl=/booking/${movieId}`}><LogIn className="mr-2 h-4 w-4" /> Login</Link>
               </Button>
               <Button variant="default" size="sm" asChild>
-                <Link href="/register"><UserPlus className="mr-2 h-4 w-4" /> Register</Link>
+                <Link href={`/register?callbackUrl=/booking/${movieId}`}><UserPlus className="mr-2 h-4 w-4" /> Register</Link>
               </Button>
             </>
           )}
@@ -105,8 +105,11 @@ export default function MovieBookingPage() {
         )}
         {!isLoadingMovie && movie && (
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold">Booking for: {movie.title}</h1>
-            {movie.description && <p className="text-muted-foreground mt-1">{movie.description.substring(0,100)}...</p>}
+            <h1 className="text-3xl font-bold flex items-center justify-center">
+                <Ticket className="mr-3 h-8 w-8 text-primary" />
+                Booking for: {movie.title}
+            </h1>
+            {movie.description && <p className="text-muted-foreground mt-1 text-sm">{movie.description.substring(0,150)}...</p>}
           </div>
         )}
         {!isLoadingMovie && !movie && (
@@ -118,8 +121,7 @@ export default function MovieBookingPage() {
            </div>
         )}
         
-        {/* Render BookingSystem only if movie is loaded, or if still loading but movieId is present */}
-        {(isLoadingMovie && movieId || !isLoadingMovie && movie) && <BookingSystem />}
+        {(isLoadingMovie && movieId || !isLoadingMovie && movie) && <BookingSystem movie={movie} />}
 
       </main>
 

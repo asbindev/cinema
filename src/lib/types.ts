@@ -1,5 +1,4 @@
 
-
 export type SeatStatus = 'available' | 'selected' | 'booked' | 'broken';
 export type SeatCategory = 'regular' | 'vip' | 'accessible' | 'ageRestricted' | 'senior';
 
@@ -31,8 +30,8 @@ export interface BookingFormState {
 }
 
 export interface CurrentBooking extends BookingFormState {
-  id: string;
-  bookedSeats: Seat[];
+  id: string; // This will be the bookingId from the database
+  bookedSeats: Seat[]; // UI Seat objects
 }
 
 export interface SeatLayoutConfig {
@@ -69,20 +68,35 @@ export interface MovieFormData {
 }
 
 // User and Auth types
-export interface User {
+export interface User { // Represents a user in the database
   id: number;
   name?: string | null;
   email: string;
   role: 'user' | 'admin';
-  hashedPassword?: string; // Should not be sent to client
+  hashedPassword?: string; 
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface AuthUser { // What NextAuth session/jwt will contain
-  id: string; // Changed from number to string to align with authorize return and token
+export interface AuthUser { // Represents the authenticated user in session/token
+  id: string; 
   name?: string | null;
   email: string;
   role: 'user' | 'admin';
 }
 
+// Booking types
+export interface NewBookingPayload {
+  movieId: number;
+  movieTitle: string;
+  userId?: string; // from AuthUser.id, which is string
+  userEmail?: string;
+  seatIds: string[];
+  groupSize: number;
+  preferences: BookingFormState;
+}
+
+export interface BookingEntry extends NewBookingPayload {
+  id: string; // UUID from database
+  bookingTime: string; // ISO date string
+}

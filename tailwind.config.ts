@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -60,20 +61,22 @@ export default {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'seat-regular': 'var(--seat-regular)',
-        'seat-regular-foreground': 'var(--seat-regular-foreground)',
-        'seat-vip': 'var(--seat-vip)',
-        'seat-vip-foreground': 'var(--seat-vip-foreground)',
-        'seat-accessible': 'var(--seat-accessible)',
-        'seat-accessible-foreground': 'var(--seat-accessible-foreground)',
-        'seat-age-restricted': 'var(--seat-age-restricted)',
-        'seat-age-restricted-foreground': 'var(--seat-age-restricted-foreground)',
-        'seat-broken': 'var(--seat-broken)',
-        'seat-broken-foreground': 'var(--seat-broken-foreground)',
-        'seat-booked': 'var(--seat-booked)',
-        'seat-booked-foreground': 'var(--seat-booked-foreground)',
-        'seat-selected': 'var(--seat-selected)',
-        'seat-selected-foreground': 'var(--seat-selected-foreground)',
+        'seat-available-regular': 'hsl(var(--seat-available-regular))',
+        'seat-available-regular-foreground': 'hsl(var(--seat-available-regular-foreground))',
+        'seat-available-vip': 'hsl(var(--seat-available-vip))',
+        'seat-available-vip-foreground': 'hsl(var(--seat-available-vip-foreground))',
+        'seat-available-accessible': 'hsl(var(--seat-available-accessible))',
+        'seat-available-accessible-foreground': 'hsl(var(--seat-available-accessible-foreground))',
+        'seat-available-senior': 'hsl(var(--seat-available-senior))',
+        'seat-available-senior-foreground': 'hsl(var(--seat-available-senior-foreground))',
+        'seat-available-age-restricted': 'hsl(var(--seat-available-age-restricted))',
+        'seat-available-age-restricted-foreground': 'hsl(var(--seat-available-age-restricted-foreground))',
+        'seat-broken': 'hsl(var(--seat-broken))',
+        'seat-broken-foreground': 'hsl(var(--seat-broken-foreground))',
+        'seat-booked': 'hsl(var(--seat-booked))',
+        'seat-booked-foreground': 'hsl(var(--seat-booked-foreground))',
+        'seat-selected': 'hsl(var(--seat-selected))',
+        'seat-selected-foreground': 'hsl(var(--seat-selected-foreground))',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

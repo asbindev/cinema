@@ -49,47 +49,33 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Updated seat colors to match UI description */
-    --seat-available: 220 13% 91%; /* Light Gray */
-    --seat-available-foreground: 240 10% 3.9%;
+    /* Seat Colors - Light Theme */
+    --seat-available-regular: 220 13% 91%; /* Light Gray for regular available */
+    --seat-available-regular-foreground: 240 10% 20%;
 
-    --seat-vip: 120 60% 45%; /* Green */
-    --seat-vip-foreground: 0 0% 98%;
+    --seat-available-vip: 280 50% 60%; /* Light Purple for VIP available */
+    --seat-available-vip-foreground: 0 0% 98%;
 
-    --seat-accessible: 250 60% 60%; /* Purple-ish Blue for 'DISABLE' */
-    --seat-accessible-foreground: 0 0% 98%;
+    --seat-available-accessible: 180 50% 60%; /* Light Teal for Accessible available */
+    --seat-available-accessible-foreground: 0 0% 98%;
     
-    --seat-senior: 220 70% 45%; /* Dark Blue for 'SENIOR CITIZEN' */
-    --seat-senior-foreground: 0 0% 98%;
+    --seat-available-senior: 30 70% 70%; /* Light Orange for Senior available */
+    --seat-available-senior-foreground: 240 10% 20%;
 
-    --seat-broken: 180 50% 45%; /* Teal for 'DAMAGED' */
+    --seat-available-age-restricted: 0 60% 70%; /* Light Red for Age-Restricted available */
+    --seat-available-age-restricted-foreground: 0 0% 98%;
+
+    --seat-broken: 0 0% 60%; /* Medium Gray for Broken */
     --seat-broken-foreground: 0 0% 98%;
-
-    /* --seat-age-restricted: 45 100% 50%; /* Yellow for age-restricted - Not in new UI */
-    /* --seat-age-restricted-foreground: hsl(var(--foreground)); */
-
-    --seat-booked-group: 0 70% 50%; /* Red for 'GROUP' */
-    --seat-booked-group-foreground: 0 0% 98%;
-
-    --seat-booked-single: 30 80% 55%; /* Orange for 'SINGLE' */
-    --seat-booked-single-foreground: 0 0% 98%;
     
-    --seat-booked: 240 10% 15%; /* Dark Gray/Black for generic 'BOOKED' */
+    --seat-booked: 240 10% 25%; /* Dark Blue/Gray for Booked */
     --seat-booked-foreground: 0 0% 90%;
     
-    --seat-selected: hsl(var(--accent));
+    --seat-selected: hsl(var(--accent)); /* Vibrant Orange for Selected */
     --seat-selected-foreground: hsl(var(--accent-foreground));
 
-    /* Specific text colors for seats */
-    --seat-text-vip: 120 100% 95%;
-    --seat-text-disable: 250 100% 95%;
-    --seat-text-senior: 220 100% 95%;
-    --seat-text-damaged: 180 100% 95%;
-    --seat-text-group: 0 100% 95%;
-    --seat-text-single: 30 100% 95%;
-    --seat-text-booked: 0 0% 80%;
-    --seat-text-available: 240 10% 20%;
-    --seat-text-id: 0 0% 40%; /* for D1, C3 etc. */
+    /* Text colors for icons/text on seats for better contrast if needed */
+    --seat-text-id: 0 0% 40%; /* for D1, C3 etc. - general seat identifier */
   }
 
   .dark {
@@ -131,43 +117,32 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Dark theme seat colors */
-    --seat-available: 240 3.7% 20%; 
-    --seat-available-foreground: 0 0% 90%;
+    /* Seat Colors - Dark Theme */
+    --seat-available-regular: 240 3.7% 20%; 
+    --seat-available-regular-foreground: 0 0% 90%;
 
-    --seat-vip: 120 50% 35%;
-    --seat-vip-foreground: 0 0% 98%;
+    --seat-available-vip: 280 40% 45%; /* Darker Purple for VIP available */
+    --seat-available-vip-foreground: 0 0% 98%;
 
-    --seat-accessible: 250 50% 50%;
-    --seat-accessible-foreground: 0 0% 98%;
+    --seat-available-accessible: 180 40% 45%; /* Darker Teal for Accessible available */
+    --seat-available-accessible-foreground: 0 0% 98%;
     
-    --seat-senior: 220 60% 40%;
-    --seat-senior-foreground: 0 0% 98%;
+    --seat-available-senior: 30 60% 55%; /* Darker Orange for Senior available */
+    --seat-available-senior-foreground: 0 0% 90%;
 
-    --seat-broken: 180 40% 35%;
+    --seat-available-age-restricted: 0 50% 55%; /* Darker Red for Age-Restricted available */
+    --seat-available-age-restricted-foreground: 0 0% 98%;
+
+    --seat-broken: 0 0% 30%; /* Darker Gray for Broken */
     --seat-broken-foreground: 0 0% 98%;
-
-    --seat-booked-group: 0 60% 40%;
-    --seat-booked-group-foreground: 0 0% 98%;
-
-    --seat-booked-single: 30 70% 45%;
-    --seat-booked-single-foreground: 0 0% 98%;
     
-    --seat-booked: 240 10% 10%;
+    --seat-booked: 240 10% 10%; /* Very Dark Blue/Gray for Booked */
     --seat-booked-foreground: 0 0% 80%;
     
-    --seat-selected: hsl(var(--accent));
+    --seat-selected: hsl(var(--accent)); /* Vibrant Orange for Selected */
     --seat-selected-foreground: hsl(var(--accent-foreground));
     
-    /* Dark theme specific text colors for seats */
-    --seat-text-vip: 120 100% 85%;
-    --seat-text-disable: 250 100% 85%;
-    --seat-text-senior: 220 100% 85%;
-    --seat-text-damaged: 180 100% 85%;
-    --seat-text-group: 0 100% 85%;
-    --seat-text-single: 30 100% 85%;
-    --seat-text-booked: 0 0% 70%;
-    --seat-text-available: 240 10% 70%;
+    /* Text colors for icons/text on seats for better contrast if needed */
     --seat-text-id: 0 0% 60%;
   }
 }

@@ -1,6 +1,7 @@
+
 'use client';
 import type React from 'react';
-import { Armchair, Star, Accessibility, Ban, UserCheck, CheckCircle2 } from 'lucide-react'; // Changed Wheelchair to Accessibility
+import { Armchair, Star, Accessibility, Ban, UserCheck, CheckCircle2, Elderly, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Seat, SeatStatus, SeatCategory } from '@/lib/types';
@@ -21,10 +22,12 @@ const SeatIcon: React.FC<{ category: SeatCategory, status: SeatStatus, isSelecte
     case 'vip':
       return <Star className="h-4 w-4 sm:h-5 sm:w-5" />;
     case 'accessible':
-      return <Accessibility className="h-4 w-4 sm:h-5 sm:w-5" />; // Changed Wheelchair to Accessibility
+      return <Accessibility className="h-4 w-4 sm:h-5 sm:w-5" />;
+    case 'senior':
+      return <Elderly className="h-4 w-4 sm:h-5 sm:w-5" />;
     case 'ageRestricted':
-      return <Ban className="h-4 w-4 sm:h-5 sm:w-5" />; // Or a specific icon if available like 'UsersRound'
-    default:
+      return <ShieldAlert className="h-4 w-4 sm:h-5 sm:w-5" />;
+    default: // regular
       return <Armchair className="h-4 w-4 sm:h-5 sm:w-5" />;
   }
 };
@@ -34,8 +37,10 @@ export const SeatComponent: React.FC<SeatProps> = ({ seat, onSeatClick, disabled
 
   const isSeatDisabled = disabled || status === 'booked' || status === 'broken';
 
-  let statusText = `Seat ${id} (${category})`;
+  let statusText = `Seat ${id}`;
+  if (category !== 'regular') statusText += ` (${category})`;
   if (ageRestriction) statusText += ` - Age ${ageRestriction}+`;
+  
   if (status === 'broken') statusText = `Seat ${id} - Broken`;
   else if (status === 'booked') statusText = `Seat ${id} - Booked`;
   else if (isSelected) statusText = `Seat ${id} - Selected`;
@@ -45,10 +50,14 @@ export const SeatComponent: React.FC<SeatProps> = ({ seat, onSeatClick, disabled
     "p-1.5 sm:p-2 aspect-square transition-all duration-150 ease-in-out transform hover:scale-105",
     "focus:ring-2 focus:ring-offset-2 focus:ring-ring",
     {
-      'bg-seat-regular text-seat-regular-foreground hover:bg-seat-regular/90': status === 'available' && category === 'regular',
-      'bg-seat-vip text-seat-vip-foreground hover:bg-seat-vip/90': status === 'available' && category === 'vip',
-      'bg-seat-accessible text-seat-accessible-foreground hover:bg-seat-accessible/90': status === 'available' && category === 'accessible',
-      'bg-seat-age-restricted text-seat-age-restricted-foreground hover:bg-seat-age-restricted/90': status === 'available' && category === 'ageRestricted',
+      // Available states by category
+      'bg-seat-available-regular text-seat-available-regular-foreground hover:bg-seat-available-regular/90': status === 'available' && category === 'regular',
+      'bg-seat-available-vip text-seat-available-vip-foreground hover:bg-seat-available-vip/90': status === 'available' && category === 'vip',
+      'bg-seat-available-accessible text-seat-available-accessible-foreground hover:bg-seat-available-accessible/90': status === 'available' && category === 'accessible',
+      'bg-seat-available-senior text-seat-available-senior-foreground hover:bg-seat-available-senior/90': status === 'available' && category === 'senior',
+      'bg-seat-available-age-restricted text-seat-available-age-restricted-foreground hover:bg-seat-available-age-restricted/90': status === 'available' && category === 'ageRestricted',
+      
+      // Other statuses (override available styling)
       'bg-seat-broken text-seat-broken-foreground cursor-not-allowed opacity-60': status === 'broken',
       'bg-seat-booked text-seat-booked-foreground cursor-not-allowed opacity-80': status === 'booked',
       'bg-seat-selected text-seat-selected-foreground ring-2 ring-offset-2 ring-seat-selected': isSelected,

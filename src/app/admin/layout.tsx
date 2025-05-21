@@ -1,11 +1,11 @@
 
-'use client'; // Required for using hooks like useSession and redirect
+'use client'; 
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Film, Users, LogOut, UserCircle, Home } from 'lucide-react';
+import { Film, Users, LogOut, UserCircle, Home, Ticket } from 'lucide-react'; // Added Ticket
 import { useSession, signOut } from 'next-auth/react';
 import { redirect, usePathname } from 'next/navigation';
 import { CineSeatProLogo } from '@/components/CineSeatProLogo';
@@ -37,6 +37,7 @@ export default function AdminLayout({
               <Skeleton className="h-8 w-3/4 mb-4" />
               <Skeleton className="h-10 w-full mb-2" />
               <Skeleton className="h-10 w-full mb-2" />
+              <Skeleton className="h-10 w-full mb-2" />
               <Separator />
               <Skeleton className="h-16 w-full" />
             </aside>
@@ -51,21 +52,13 @@ export default function AdminLayout({
     );
   }
 
-  // If unauthenticated, or if session/user is somehow missing even if status isn't 'loading'
   if (status === 'unauthenticated' || !session || !session.user) {
     const callbackUrl = encodeURIComponent(pathname || '/admin');
     redirect(`/login?callbackUrl=${callbackUrl}`);
-    return null; // redirect will handle it, this line is for type safety and to stop further rendering.
+    return null; 
   }
   
-  // At this point, status is 'authenticated' and session & session.user exist.
   const authUser = session.user as AuthUser;
-
-  // Optional: Check for admin role if you have one
-  // if (authUser.role !== 'admin') {
-  //   redirect('/'); // Or a "not authorized" page
-  //   return null;
-  // }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -96,6 +89,12 @@ export default function AdminLayout({
                 Movies
               </Link>
             </Button>
+            <Button variant={pathname === '/admin/bookings' ? "secondary" : "ghost"} className="justify-start" asChild>
+              <Link href="/admin/bookings">
+                <Ticket className="mr-2 h-5 w-5" />
+                Bookings
+              </Link>
+            </Button>
             {/* Example for future Users link
             <Button variant="ghost" className="justify-start" asChild>
               <Link href="/admin/users">
@@ -114,7 +113,7 @@ export default function AdminLayout({
           </nav>
           <Separator />
           <p className="text-sm text-muted-foreground">
-            Manage your movie hall settings, movies, and users from here.
+            Manage your movie hall settings, movies, bookings, and users from here.
           </p>
         </aside>
         <main className="flex-1 pl-8 border-l">

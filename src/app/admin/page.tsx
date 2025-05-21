@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Film, Users, LayoutDashboard } from 'lucide-react';
+import { Film, Users, LayoutDashboard, Ticket } from 'lucide-react'; // Added Ticket icon
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard - CineSeat Pro',
@@ -34,6 +34,23 @@ export default function AdminDashboardPage() {
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/admin/movies">Go to Movies</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Ticket className="mr-2 h-6 w-6 text-primary" />
+              View Bookings
+            </CardTitle>
+            <CardDescription>
+              View all customer bookings and seat reservations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/admin/bookings">View Bookings</Link>
             </Button>
           </CardContent>
         </Card>
