@@ -124,7 +124,7 @@ export default function MovieBookingPage() {
       </main>
 
       <footer className="mt-12 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} CineSeat Pro. AI-Powered Seating.</p>
+        <p>&copy; {new Date().getFullYear()} CineSeat Pro. </p>
          {session?.user && <p className="text-xs">Logged in as: {session.user.email}</p>}
       </footer>
     </div>
