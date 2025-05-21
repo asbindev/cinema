@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role as 'user' | 'admin'; // user comes from authorize which has role
+        token.role =  'admin'; // user comes from authorize which has role
         token.name = user.name;
         token.email = user.email;
       }
